@@ -3,18 +3,20 @@
 import { FormEvent } from "react";
 
 type BoardFormProps = {
-  onSubmit?: (payload: { name: string }) => void;
+  onSubmit?: (payload: { name: string }) => Promise<void> | void;
+  isSubmitting?: boolean;
 };
 
-export function BoardForm({ onSubmit }: BoardFormProps) {
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+export function BoardForm({ onSubmit, isSubmitting = false }: BoardFormProps) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    const formData = new FormData(event.currentTarget);
+    const form = event.currentTarget;
+    const formData = new FormData(form);
     const name = String(formData.get("name") ?? "");
 
-    // TODO: Create board in Supabase and then revalidate list/state.
-    onSubmit?.({ name });
+    await onSubmit?.({ name });
+    form.reset();
   }
 
   return (
@@ -32,8 +34,8 @@ export function BoardForm({ onSubmit }: BoardFormProps) {
           type="text"
         />
       </div>
-      <button className="rounded bg-slate-900 px-4 py-2 text-white" type="submit">
-        Create Board
+      <button className="rounded bg-slate-900 px-4 py-2 text-white disabled:opacity-60" disabled={isSubmitting} type="submit">
+        {isSubmitting ? "Creating..." : "Create Board"}
       </button>
     </form>
   );

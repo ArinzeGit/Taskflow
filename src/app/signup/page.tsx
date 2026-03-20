@@ -2,14 +2,33 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { getSupabaseClient } from "@/lib/supabase";
 
 export default function SignupPage() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isCheckingSession, setIsCheckingSession] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function redirectIfAuthenticated() {
+      try {
+        const supabase = getSupabaseClient();
+        const { data } = await supabase.auth.getSession();
+
+        if (data.session) {
+          router.replace("/boards");
+          return;
+        }
+      } finally {
+        setIsCheckingSession(false);
+      }
+    }
+
+    void redirectIfAuthenticated();
+  }, [router]);
 
   async function handleSignup(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -43,6 +62,14 @@ export default function SignupPage() {
     } finally {
       setIsSubmitting(false);
     }
+  }
+
+  if (isCheckingSession) {
+    return (
+      <main className="mx-auto flex min-h-screen w-full max-w-md flex-col items-center justify-center p-6">
+        <p className="text-sm text-slate-600">Checking session...</p>
+      </main>
+    );
   }
 
   return (

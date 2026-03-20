@@ -3,20 +3,23 @@
 import { FormEvent } from "react";
 
 type TaskFormProps = {
-  onSubmit?: (payload: { title: string; description: string }) => void;
+  onSubmit?: (payload: { title: string; description: string }) => Promise<void> | void;
   submitLabel?: string;
+  isSubmitting?: boolean;
+  disabled?: boolean;
 };
 
-export function TaskForm({ onSubmit, submitLabel = "Save Task" }: TaskFormProps) {
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+export function TaskForm({ onSubmit, submitLabel = "Save Task", isSubmitting = false, disabled = false }: TaskFormProps) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    const formData = new FormData(event.currentTarget);
+    const form = event.currentTarget;
+    const formData = new FormData(form);
     const title = String(formData.get("title") ?? "");
     const description = String(formData.get("description") ?? "");
 
-    // TODO: Add validation and connect this handler to Supabase insert/update logic.
-    onSubmit?.({ title, description });
+    await onSubmit?.({ title, description });
+    form.reset();
   }
 
   return (
@@ -27,6 +30,7 @@ export function TaskForm({ onSubmit, submitLabel = "Save Task" }: TaskFormProps)
         </label>
         <input
           className="w-full rounded border border-slate-300 px-3 py-2"
+          disabled={disabled}
           id="task-title"
           name="title"
           placeholder="Write docs"
@@ -40,13 +44,14 @@ export function TaskForm({ onSubmit, submitLabel = "Save Task" }: TaskFormProps)
         </label>
         <textarea
           className="w-full rounded border border-slate-300 px-3 py-2"
+          disabled={disabled}
           id="task-description"
           name="description"
           placeholder="Add acceptance criteria..."
           rows={3}
         />
       </div>
-      <button className="rounded bg-slate-900 px-4 py-2 text-white" type="submit">
+      <button className="rounded bg-slate-900 px-4 py-2 text-white disabled:opacity-60" disabled={isSubmitting || disabled} type="submit">
         {submitLabel}
       </button>
     </form>

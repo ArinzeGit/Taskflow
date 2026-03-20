@@ -7,9 +7,12 @@ import { BoardForm } from "./BoardForm";
 type SidebarProps = {
   boards: Board[];
   selectedBoardId?: string;
+  onCreateBoard?: (payload: { name: string }) => Promise<void> | void;
+  onSelectBoard?: (boardId: string) => void;
+  isCreatingBoard?: boolean;
 };
 
-export function Sidebar({ boards, selectedBoardId }: SidebarProps) {
+export function Sidebar({ boards, selectedBoardId, onCreateBoard, onSelectBoard, isCreatingBoard = false }: SidebarProps) {
   return (
     <aside className="w-full space-y-4 border-r border-slate-300 bg-slate-50 p-4 md:w-80">
       <div>
@@ -17,11 +20,7 @@ export function Sidebar({ boards, selectedBoardId }: SidebarProps) {
         <p className="text-sm text-slate-600">Create or select a board</p>
       </div>
 
-      <BoardForm
-        onSubmit={() => {
-          // TODO: Trigger board creation and refresh list.
-        }}
-      />
+      <BoardForm isSubmitting={isCreatingBoard} onSubmit={onCreateBoard} />
 
       <div className="space-y-2">
         {boards.map((board) => (
@@ -29,9 +28,7 @@ export function Sidebar({ boards, selectedBoardId }: SidebarProps) {
             board={board}
             isSelected={board.id === selectedBoardId}
             key={board.id}
-            onSelect={() => {
-              // TODO: Update selected board state and sync URL/query param.
-            }}
+            onSelect={onSelectBoard}
           />
         ))}
       </div>
