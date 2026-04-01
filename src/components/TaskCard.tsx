@@ -2,7 +2,7 @@ import { Task } from "@/types";
 
 type TaskCardProps = {
   task: Task;
-  onEdit?: (taskId: string) => void;
+  onEdit?: (task: Task) => void;
   onDelete?: (taskId: string) => void;
 };
 
@@ -17,7 +17,7 @@ export function TaskCard({ task, onEdit, onDelete }: TaskCardProps) {
       <div className="flex gap-2">
         <button
           className="rounded bg-slate-800 px-3 py-1 text-sm text-white"
-          onClick={() => onEdit?.(task.id)}
+          onClick={() => onEdit?.(task)}
           type="button"
         >
           Edit

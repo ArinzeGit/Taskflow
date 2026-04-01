@@ -1,8 +1,10 @@
 "use client";
 
+import { BoardRenameModal } from "@/components/BoardRenameModal";
 import { Header } from "@/components/Header";
 import { Sidebar } from "@/components/Sidebar";
 import { TaskCard } from "@/components/TaskCard";
+import { TaskEditModal } from "@/components/TaskEditModal";
 import { TaskForm } from "@/components/TaskForm";
 import { getSupabaseClient } from "@/lib/supabase";
 import { Board, Task } from "@/types";
@@ -60,6 +62,10 @@ export default function BoardsPage() {
   const [boards, setBoards] = useState<Board[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [selectedBoardId, setSelectedBoardId] = useState<string | null>(null);
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [renamingBoard, setRenamingBoard] = useState<Board | null>(null);
+  const [isSavingTaskEdit, setIsSavingTaskEdit] = useState(false);
+  const [isSavingBoardRename, setIsSavingBoardRename] = useState(false);
   const channelRef = useRef<RealtimeChannel | null>(null);
 
   useEffect(() => {
@@ -276,6 +282,153 @@ export default function BoardsPage() {
     }
   }
 
+  async function handleSaveTaskEdit(payload: {
+    id: string;
+    title: string;
+    description: string;
+    status: Task["status"];
+  }) {
+    setIsSavingTaskEdit(true);
+    setErrorMessage(null);
+    const previousTasks = tasks;
+    const now = new Date().toISOString();
+    setTasks((prev) =>
+      prev.map((item) =>
+        item.id === payload.id
+          ? {
+              ...item,
+              title: payload.title,
+              description: payload.description || undefined,
+              status: payload.status,
+              updatedAt: now
+            }
+          : item
+      )
+    );
+
+    try {
+      const supabase = getSupabaseClient();
+      const { data, error } = await supabase
+        .from("tasks")
+        .update({
+          title: payload.title,
+          description: payload.description || null,
+          status: payload.status,
+          updated_at: now
+        })
+        .eq("id", payload.id)
+        .select("id,board_id,title,description,status,assignee_id,created_at,updated_at")
+        .single();
+
+      if (error) {
+        setErrorMessage(error.message);
+        setTasks(previousTasks);
+        return;
+      }
+
+      setTasks((prev) =>
+        prev.map((item) => (item.id === payload.id ? mapTask(data as TaskRow) : item))
+      );
+      setEditingTask(null);
+    } catch (error) {
+      setTasks(previousTasks);
+      setErrorMessage(error instanceof Error ? error.message : "Failed to update task.");
+    } finally {
+      setIsSavingTaskEdit(false);
+    }
+  }
+
+  function handleRenameBoardRequest(boardId: string) {
+    const board = boards.find((b) => b.id === boardId);
+    if (board) {
+      setRenamingBoard(board);
+    }
+  }
+
+  async function handleSaveBoardRename(name: string) {
+    if (!renamingBoard) {
+      return;
+    }
+
+    setIsSavingBoardRename(true);
+    setErrorMessage(null);
+    const previousBoards = boards;
+
+    setBoards((prev) =>
+      prev.map((b) => (b.id === renamingBoard.id ? { ...b, name } : b))
+    );
+
+    try {
+      const supabase = getSupabaseClient();
+      const { data, error } = await supabase
+        .from("boards")
+        .update({ name })
+        .eq("id", renamingBoard.id)
+        .select("id,name,owner_id,created_at")
+        .single();
+
+      if (error) {
+        setErrorMessage(error.message);
+        setBoards(previousBoards);
+        return;
+      }
+
+      setBoards((prev) =>
+        prev.map((b) => (b.id === renamingBoard.id ? mapBoard(data as BoardRow) : b))
+      );
+      setRenamingBoard(null);
+    } catch (error) {
+      setBoards(previousBoards);
+      setErrorMessage(error instanceof Error ? error.message : "Failed to rename board.");
+    } finally {
+      setIsSavingBoardRename(false);
+    }
+  }
+
+  async function handleDeleteBoard(boardId: string) {
+    if (!window.confirm("Delete this board and all its tasks? This cannot be undone.")) {
+      return;
+    }
+
+    setErrorMessage(null);
+    const previousBoards = boards;
+    const wasSelected = selectedBoardId === boardId;
+    const remaining = previousBoards.filter((b) => b.id !== boardId);
+
+    setBoards(remaining);
+    if (wasSelected) {
+      setSelectedBoardId(remaining[0]?.id ?? null);
+      setTasks([]);
+    }
+
+    try {
+      const supabase = getSupabaseClient();
+      const { error } = await supabase.from("boards").delete().eq("id", boardId);
+
+      if (error) {
+        setErrorMessage(error.message);
+        setBoards(previousBoards);
+        if (wasSelected) {
+          setSelectedBoardId(boardId);
+        }
+        return;
+      }
+
+      if (editingTask?.boardId === boardId) {
+        setEditingTask(null);
+      }
+      if (renamingBoard?.id === boardId) {
+        setRenamingBoard(null);
+      }
+    } catch (error) {
+      setBoards(previousBoards);
+      if (wasSelected) {
+        setSelectedBoardId(boardId);
+      }
+      setErrorMessage(error instanceof Error ? error.message : "Failed to delete board.");
+    }
+  }
+
   async function handleDeleteTask(taskId: string) {
     setErrorMessage(null);
     const previousTasks = tasks;
@@ -292,42 +445,6 @@ export default function BoardsPage() {
     } catch (error) {
       setTasks(previousTasks);
       setErrorMessage(error instanceof Error ? error.message : "Failed to delete task.");
-    }
-  }
-
-  async function handleCycleTaskStatus(taskId: string) {
-    const task = tasks.find((item) => item.id === taskId);
-    if (!task) {
-      return;
-    }
-
-    const nextStatus =
-      task.status === "todo" ? "in_progress" : task.status === "in_progress" ? "done" : "todo";
-
-    setErrorMessage(null);
-    const previousTasks = tasks;
-    setTasks((prev) =>
-      prev.map((item) =>
-        item.id === taskId
-          ? { ...item, status: nextStatus, updatedAt: new Date().toISOString() }
-          : item
-      )
-    );
-
-    try {
-      const supabase = getSupabaseClient();
-      const { error } = await supabase
-        .from("tasks")
-        .update({ status: nextStatus, updated_at: new Date().toISOString() })
-        .eq("id", taskId);
-
-      if (error) {
-        setErrorMessage(error.message);
-        setTasks(previousTasks);
-      }
-    } catch (error) {
-      setTasks(previousTasks);
-      setErrorMessage(error instanceof Error ? error.message : "Failed to update task.");
     }
   }
 
@@ -356,6 +473,8 @@ export default function BoardsPage() {
           boards={boards}
           isCreatingBoard={isCreatingBoard}
           onCreateBoard={handleCreateBoard}
+          onDeleteBoard={handleDeleteBoard}
+          onRenameBoard={handleRenameBoardRequest}
           onSelectBoard={setSelectedBoardId}
           selectedBoardId={selectedBoardId ?? undefined}
         />
@@ -381,7 +500,7 @@ export default function BoardsPage() {
                 <TaskCard
                   key={task.id}
                   onDelete={handleDeleteTask}
-                  onEdit={handleCycleTaskStatus}
+                  onEdit={setEditingTask}
                   task={task}
                 />
               ))}
@@ -390,6 +509,20 @@ export default function BoardsPage() {
           </section>
         </main>
       </div>
+
+      <TaskEditModal
+        isSaving={isSavingTaskEdit}
+        onClose={() => setEditingTask(null)}
+        onSave={handleSaveTaskEdit}
+        task={editingTask}
+      />
+
+      <BoardRenameModal
+        board={renamingBoard}
+        isSaving={isSavingBoardRename}
+        onClose={() => setRenamingBoard(null)}
+        onSave={handleSaveBoardRename}
+      />
     </div>
   );
 }
