@@ -1,5 +1,6 @@
 "use client";
 
+import { Alert } from "@/components/Alert";
 import { BoardRenameModal } from "@/components/BoardRenameModal";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { EmptyState } from "@/components/EmptyState";
@@ -10,10 +11,11 @@ import { TaskEditModal } from "@/components/TaskEditModal";
 import { Spinner } from "@/components/Spinner";
 import { TaskForm } from "@/components/TaskForm";
 import { TaskListSkeleton } from "@/components/TaskListSkeleton";
+import { getErrorMessage } from "@/lib/errors";
 import { getSupabaseClient } from "@/lib/supabase";
 import { Board, Task } from "@/types";
 import { useRouter } from "next/navigation";
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { RealtimeChannel } from "@supabase/supabase-js";
 
 type BoardRow = {
@@ -62,7 +64,9 @@ export default function BoardsPage() {
   const [isLoadingData, setIsLoadingData] = useState(true);
   const [isCreatingBoard, setIsCreatingBoard] = useState(false);
   const [isCreatingTask, setIsCreatingTask] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [boardsLoadError, setBoardsLoadError] = useState<string | null>(null);
+  const [tasksLoadError, setTasksLoadError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
   const [boards, setBoards] = useState<Board[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [selectedBoardId, setSelectedBoardId] = useState<string | null>(null);
@@ -95,54 +99,56 @@ export default function BoardsPage() {
     void checkSession();
   }, [router]);
 
+  const loadBoards = useCallback(async () => {
+    setIsLoadingData(true);
+    setBoardsLoadError(null);
+
+    try {
+      const supabase = getSupabaseClient();
+      const { data: boardsData, error: boardsError } = await supabase
+        .from("boards")
+        .select("id,name,owner_id,created_at")
+        .order("created_at", { ascending: true });
+
+      if (boardsError) {
+        setBoardsLoadError(boardsError.message);
+        return;
+      }
+
+      const mappedBoards = (boardsData ?? []).map((board) => mapBoard(board as BoardRow));
+      setBoards(mappedBoards);
+
+      if (mappedBoards.length === 0) {
+        setSelectedBoardId(null);
+        setTasks([]);
+        return;
+      }
+
+      setSelectedBoardId((prev) => prev ?? mappedBoards[0].id);
+    } catch (error) {
+      setBoardsLoadError(getErrorMessage(error, "Failed to load boards."));
+    } finally {
+      setIsLoadingData(false);
+    }
+  }, []);
+
   useEffect(() => {
     if (isCheckingSession) {
       return;
     }
 
-    async function loadInitialData() {
-      setIsLoadingData(true);
-      setErrorMessage(null);
-
-      try {
-        const supabase = getSupabaseClient();
-        const { data: boardsData, error: boardsError } = await supabase
-          .from("boards")
-          .select("id,name,owner_id,created_at")
-          .order("created_at", { ascending: true });
-
-        if (boardsError) {
-          setErrorMessage(boardsError.message);
-          return;
-        }
-
-        const mappedBoards = (boardsData ?? []).map((board) => mapBoard(board as BoardRow));
-        setBoards(mappedBoards);
-
-        if (mappedBoards.length === 0) {
-          setSelectedBoardId(null);
-          setTasks([]);
-          return;
-        }
-
-        setSelectedBoardId((prev) => prev ?? mappedBoards[0].id);
-      } catch (error) {
-        setErrorMessage(error instanceof Error ? error.message : "Failed to load boards.");
-      } finally {
-        setIsLoadingData(false);
-      }
-    }
-
-    void loadInitialData();
-  }, [isCheckingSession]);
+    void loadBoards();
+  }, [isCheckingSession, loadBoards]);
 
   useLayoutEffect(() => {
     if (!selectedBoardId) {
       setIsLoadingTasks(false);
       setTasks([]);
+      setTasksLoadError(null);
       return;
     }
 
+    setTasksLoadError(null);
     setIsLoadingTasks(true);
     setTasks([]);
   }, [selectedBoardId]);
@@ -155,8 +161,6 @@ export default function BoardsPage() {
     let cancelled = false;
 
     async function loadTasksForBoard(boardId: string) {
-      setErrorMessage(null);
-
       try {
         const supabase = getSupabaseClient();
         const { data: tasksData, error: tasksError } = await supabase
@@ -170,14 +174,14 @@ export default function BoardsPage() {
         }
 
         if (tasksError) {
-          setErrorMessage(tasksError.message);
+          setTasksLoadError(tasksError.message);
           return;
         }
 
         setTasks((tasksData ?? []).map((task) => mapTask(task as TaskRow)));
       } catch (error) {
         if (!cancelled) {
-          setErrorMessage(error instanceof Error ? error.message : "Failed to load tasks.");
+          setTasksLoadError(getErrorMessage(error, "Failed to load tasks."));
         }
       } finally {
         if (!cancelled) {
@@ -191,6 +195,36 @@ export default function BoardsPage() {
     return () => {
       cancelled = true;
     };
+  }, [selectedBoardId]);
+
+  const retryLoadTasks = useCallback(async () => {
+    if (!selectedBoardId) {
+      return;
+    }
+
+    setTasksLoadError(null);
+    setIsLoadingTasks(true);
+    setTasks([]);
+
+    try {
+      const supabase = getSupabaseClient();
+      const { data: tasksData, error: tasksError } = await supabase
+        .from("tasks")
+        .select("id,board_id,title,description,status,assignee_id,created_at,updated_at")
+        .eq("board_id", selectedBoardId)
+        .order("created_at", { ascending: true });
+
+      if (tasksError) {
+        setTasksLoadError(tasksError.message);
+        return;
+      }
+
+      setTasks((tasksData ?? []).map((task) => mapTask(task as TaskRow)));
+    } catch (error) {
+      setTasksLoadError(getErrorMessage(error, "Failed to load tasks."));
+    } finally {
+      setIsLoadingTasks(false);
+    }
   }, [selectedBoardId]);
 
   useEffect(() => {
@@ -220,9 +254,11 @@ export default function BoardsPage() {
             .eq("board_id", selectedBoardId)
             .order("created_at", { ascending: true });
 
-          if (!error) {
-            setTasks((data ?? []).map((task) => mapTask(task as TaskRow)));
+          if (error) {
+            setTasksLoadError(error.message);
+            return;
           }
+          setTasks((data ?? []).map((task) => mapTask(task as TaskRow)));
         }
       )
       .subscribe();
@@ -250,7 +286,7 @@ export default function BoardsPage() {
 
   async function handleCreateBoard(payload: { name: string }) {
     setIsCreatingBoard(true);
-    setErrorMessage(null);
+    setActionError(null);
 
     try {
       const supabase = getSupabaseClient();
@@ -269,7 +305,7 @@ export default function BoardsPage() {
         .single();
 
       if (error) {
-        setErrorMessage(error.message);
+        setActionError(error.message);
         return;
       }
 
@@ -277,7 +313,7 @@ export default function BoardsPage() {
       setBoards((prev) => [...prev, newBoard]);
       setSelectedBoardId(newBoard.id);
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : "Failed to create board.");
+      setActionError(getErrorMessage(error, "Failed to create board."));
     } finally {
       setIsCreatingBoard(false);
     }
@@ -289,7 +325,7 @@ export default function BoardsPage() {
     }
 
     setIsCreatingTask(true);
-    setErrorMessage(null);
+    setActionError(null);
 
     try {
       const supabase = getSupabaseClient();
@@ -305,13 +341,13 @@ export default function BoardsPage() {
         .single();
 
       if (error) {
-        setErrorMessage(error.message);
+        setActionError(error.message);
         return;
       }
 
       setTasks((prev) => [...prev, mapTask(data as TaskRow)]);
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : "Failed to create task.");
+      setActionError(getErrorMessage(error, "Failed to create task."));
     } finally {
       setIsCreatingTask(false);
     }
@@ -324,7 +360,7 @@ export default function BoardsPage() {
     status: Task["status"];
   }) {
     setIsSavingTaskEdit(true);
-    setErrorMessage(null);
+    setActionError(null);
     const previousTasks = tasks;
     const now = new Date().toISOString();
     setTasks((prev) =>
@@ -356,7 +392,7 @@ export default function BoardsPage() {
         .single();
 
       if (error) {
-        setErrorMessage(error.message);
+        setActionError(error.message);
         setTasks(previousTasks);
         return;
       }
@@ -367,7 +403,7 @@ export default function BoardsPage() {
       setEditingTask(null);
     } catch (error) {
       setTasks(previousTasks);
-      setErrorMessage(error instanceof Error ? error.message : "Failed to update task.");
+      setActionError(getErrorMessage(error, "Failed to update task."));
     } finally {
       setIsSavingTaskEdit(false);
     }
@@ -386,7 +422,7 @@ export default function BoardsPage() {
     }
 
     setIsSavingBoardRename(true);
-    setErrorMessage(null);
+    setActionError(null);
     const previousBoards = boards;
 
     setBoards((prev) =>
@@ -403,7 +439,7 @@ export default function BoardsPage() {
         .single();
 
       if (error) {
-        setErrorMessage(error.message);
+        setActionError(error.message);
         setBoards(previousBoards);
         return;
       }
@@ -414,7 +450,7 @@ export default function BoardsPage() {
       setRenamingBoard(null);
     } catch (error) {
       setBoards(previousBoards);
-      setErrorMessage(error instanceof Error ? error.message : "Failed to rename board.");
+      setActionError(getErrorMessage(error, "Failed to rename board."));
     } finally {
       setIsSavingBoardRename(false);
     }
@@ -428,7 +464,7 @@ export default function BoardsPage() {
   }
 
   async function deleteBoardById(boardId: string): Promise<boolean> {
-    setErrorMessage(null);
+    setActionError(null);
     const previousBoards = boards;
     const wasSelected = selectedBoardId === boardId;
     const remaining = previousBoards.filter((b) => b.id !== boardId);
@@ -444,7 +480,7 @@ export default function BoardsPage() {
       const { error } = await supabase.from("boards").delete().eq("id", boardId);
 
       if (error) {
-        setErrorMessage(error.message);
+        setActionError(error.message);
         setBoards(previousBoards);
         if (wasSelected) {
           setSelectedBoardId(boardId);
@@ -464,7 +500,7 @@ export default function BoardsPage() {
       if (wasSelected) {
         setSelectedBoardId(boardId);
       }
-      setErrorMessage(error instanceof Error ? error.message : "Failed to delete board.");
+      setActionError(getErrorMessage(error, "Failed to delete board."));
       return false;
     }
   }
@@ -487,7 +523,7 @@ export default function BoardsPage() {
   }
 
   async function handleDeleteTask(taskId: string) {
-    setErrorMessage(null);
+    setActionError(null);
     const previousTasks = tasks;
     setTasks((prev) => prev.filter((task) => task.id !== taskId));
 
@@ -496,12 +532,12 @@ export default function BoardsPage() {
       const { error } = await supabase.from("tasks").delete().eq("id", taskId);
 
       if (error) {
-        setErrorMessage(error.message);
+        setActionError(error.message);
         setTasks(previousTasks);
       }
     } catch (error) {
       setTasks(previousTasks);
-      setErrorMessage(error instanceof Error ? error.message : "Failed to delete task.");
+      setActionError(getErrorMessage(error, "Failed to delete task."));
     }
   }
 
@@ -529,6 +565,7 @@ export default function BoardsPage() {
       <div className="flex flex-col md:flex-row">
         <Sidebar
           boards={boards}
+          boardsLoadError={boardsLoadError}
           isCreatingBoard={isCreatingBoard}
           isLoadingBoards={isLoadingData}
           onCreateBoard={handleCreateBoard}
@@ -539,7 +576,30 @@ export default function BoardsPage() {
         />
 
         <main className="flex-1 space-y-6 p-6">
-          {errorMessage ? <p className="rounded border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">{errorMessage}</p> : null}
+          {actionError ? (
+            <Alert onDismiss={() => setActionError(null)} title="Something went wrong" variant="error">
+              {actionError}
+            </Alert>
+          ) : null}
+
+          {boardsLoadError ? (
+            <Alert
+              actions={
+                <button
+                  className="rounded border border-rose-300 bg-white px-3 py-1.5 text-sm font-medium text-rose-900 hover:bg-rose-100"
+                  onClick={() => void loadBoards()}
+                  type="button"
+                >
+                  Try again
+                </button>
+              }
+              onDismiss={() => setBoardsLoadError(null)}
+              title="Couldn’t load boards"
+              variant="error"
+            >
+              {boardsLoadError}
+            </Alert>
+          ) : null}
 
           {isLoadingData ? (
             <div
@@ -552,7 +612,7 @@ export default function BoardsPage() {
             </div>
           ) : null}
 
-          {!isLoadingData && boards.length === 0 ? (
+          {!isLoadingData && boards.length === 0 && !boardsLoadError ? (
             <EmptyState
               description="Create a board in the sidebar to get started. Boards keep your tasks grouped—by project, team, or anything you like."
               title="Create your first board"
@@ -581,7 +641,24 @@ export default function BoardsPage() {
                     </span>
                   ) : null}
                 </div>
-                {isLoadingTasks ? (
+                {tasksLoadError ? (
+                  <Alert
+                    actions={
+                      <button
+                        className="rounded border border-rose-300 bg-white px-3 py-1.5 text-sm font-medium text-rose-900 hover:bg-rose-100"
+                        onClick={() => void retryLoadTasks()}
+                        type="button"
+                      >
+                        Try again
+                      </button>
+                    }
+                    onDismiss={() => setTasksLoadError(null)}
+                    title="Couldn’t load tasks"
+                    variant="error"
+                  >
+                    {tasksLoadError}
+                  </Alert>
+                ) : isLoadingTasks ? (
                   <TaskListSkeleton />
                 ) : tasks.length === 0 ? (
                   <EmptyState

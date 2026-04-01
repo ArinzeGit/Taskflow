@@ -15,6 +15,8 @@ type SidebarProps = {
   onDeleteBoard?: (boardId: string) => void;
   isCreatingBoard?: boolean;
   isLoadingBoards?: boolean;
+  /** When set, suppresses empty state; list area stays minimal (details + retry live in main column). */
+  boardsLoadError?: string | null;
 };
 
 export function Sidebar({
@@ -25,11 +27,19 @@ export function Sidebar({
   onRenameBoard,
   onDeleteBoard,
   isCreatingBoard = false,
-  isLoadingBoards = false
+  isLoadingBoards = false,
+  boardsLoadError = null
 }: SidebarProps) {
-  const showBoardsEmpty = !isLoadingBoards && boards.length === 0;
+  const showBoardsEmpty = !isLoadingBoards && boards.length === 0 && !boardsLoadError;
 
   function renderBoardList() {
+    if (boardsLoadError) {
+      return (
+        <p className="rounded border border-rose-100 bg-rose-50/80 px-3 py-2 text-xs text-rose-800">
+          Boards could not be loaded. Use <span className="font-medium">Try again</span> in the main area.
+        </p>
+      );
+    }
     if (isLoadingBoards) {
       return <BoardListSkeleton />;
     }

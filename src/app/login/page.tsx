@@ -1,8 +1,10 @@
 "use client";
 
+import { Alert } from "@/components/Alert";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useState } from "react";
+import { getErrorMessage } from "@/lib/errors";
 import { getSupabaseClient } from "@/lib/supabase";
 
 export default function LoginPage() {
@@ -58,7 +60,7 @@ export default function LoginPage() {
       router.push("/boards");
       router.refresh();
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : "Unable to login right now.");
+      setErrorMessage(getErrorMessage(error, "Unable to login right now."));
     } finally {
       setIsSubmitting(false);
     }
@@ -87,7 +89,7 @@ export default function LoginPage() {
 
       setInfoMessage("Confirmation email resent. Check your inbox and spam folder.");
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : "Unable to resend confirmation email.");
+      setErrorMessage(getErrorMessage(error, "Unable to resend confirmation email."));
     } finally {
       setIsResending(false);
     }
@@ -134,7 +136,11 @@ export default function LoginPage() {
         <button className="w-full rounded bg-slate-900 px-4 py-2 text-white" type="submit">
           {isSubmitting ? "Logging in..." : "Login"}
         </button>
-        {errorMessage ? <p className="text-sm text-rose-700">{errorMessage}</p> : null}
+        {errorMessage ? (
+          <Alert onDismiss={() => setErrorMessage(null)} title="Login failed" variant="error">
+            {errorMessage}
+          </Alert>
+        ) : null}
         {pendingEmailConfirmation ? (
           <button
             className="w-full rounded border border-slate-300 px-4 py-2 text-sm text-slate-700 disabled:opacity-60"
@@ -145,7 +151,11 @@ export default function LoginPage() {
             {isResending ? "Resending..." : "Resend confirmation email"}
           </button>
         ) : null}
-        {infoMessage ? <p className="text-sm text-emerald-700">{infoMessage}</p> : null}
+        {infoMessage ? (
+          <Alert onDismiss={() => setInfoMessage(null)} variant="success">
+            {infoMessage}
+          </Alert>
+        ) : null}
       </form>
 
       <p className="mt-4 text-sm text-slate-600">
