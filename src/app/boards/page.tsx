@@ -7,11 +7,13 @@ import { Header } from "@/components/Header";
 import { Sidebar } from "@/components/Sidebar";
 import { TaskCard } from "@/components/TaskCard";
 import { TaskEditModal } from "@/components/TaskEditModal";
+import { Spinner } from "@/components/Spinner";
 import { TaskForm } from "@/components/TaskForm";
+import { TaskListSkeleton } from "@/components/TaskListSkeleton";
 import { getSupabaseClient } from "@/lib/supabase";
 import { Board, Task } from "@/types";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { RealtimeChannel } from "@supabase/supabase-js";
 
 type BoardRow = {
@@ -72,6 +74,7 @@ export default function BoardsPage() {
     null
   );
   const [isDeletingBoard, setIsDeletingBoard] = useState(false);
+  const [isLoadingTasks, setIsLoadingTasks] = useState(false);
   const channelRef = useRef<RealtimeChannel | null>(null);
 
   useEffect(() => {
@@ -133,11 +136,23 @@ export default function BoardsPage() {
     void loadInitialData();
   }, [isCheckingSession]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!selectedBoardId) {
+      setIsLoadingTasks(false);
       setTasks([]);
       return;
     }
+
+    setIsLoadingTasks(true);
+    setTasks([]);
+  }, [selectedBoardId]);
+
+  useEffect(() => {
+    if (!selectedBoardId) {
+      return;
+    }
+
+    let cancelled = false;
 
     async function loadTasksForBoard(boardId: string) {
       setErrorMessage(null);
@@ -150,6 +165,10 @@ export default function BoardsPage() {
           .eq("board_id", boardId)
           .order("created_at", { ascending: true });
 
+        if (cancelled) {
+          return;
+        }
+
         if (tasksError) {
           setErrorMessage(tasksError.message);
           return;
@@ -157,11 +176,21 @@ export default function BoardsPage() {
 
         setTasks((tasksData ?? []).map((task) => mapTask(task as TaskRow)));
       } catch (error) {
-        setErrorMessage(error instanceof Error ? error.message : "Failed to load tasks.");
+        if (!cancelled) {
+          setErrorMessage(error instanceof Error ? error.message : "Failed to load tasks.");
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoadingTasks(false);
+        }
       }
     }
 
     void loadTasksForBoard(selectedBoardId);
+
+    return () => {
+      cancelled = true;
+    };
   }, [selectedBoardId]);
 
   useEffect(() => {
@@ -478,8 +507,9 @@ export default function BoardsPage() {
 
   if (isCheckingSession) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-100">
-        <p className="text-sm text-slate-600">Checking session...</p>
+      <div className="flex min-h-screen flex-col items-center justify-center gap-3 bg-slate-100">
+        <Spinner label="Checking session" size="md" />
+        <p className="text-sm text-slate-600">Checking session…</p>
       </div>
     );
   }
@@ -509,8 +539,18 @@ export default function BoardsPage() {
         />
 
         <main className="flex-1 space-y-6 p-6">
-          {isLoadingData ? <p className="text-sm text-slate-600">Loading boards...</p> : null}
           {errorMessage ? <p className="rounded border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">{errorMessage}</p> : null}
+
+          {isLoadingData ? (
+            <div
+              aria-busy="true"
+              aria-label="Loading boards"
+              className="flex min-h-[12rem] flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-slate-300 bg-white/60 px-6 py-12 text-center"
+            >
+              <Spinner label="Loading boards" size="md" />
+              <p className="text-sm text-slate-600">Loading your boards…</p>
+            </div>
+          ) : null}
 
           {!isLoadingData && boards.length === 0 ? (
             <EmptyState
@@ -524,7 +564,7 @@ export default function BoardsPage() {
               <section>
                 <h2 className="mb-3 text-lg font-semibold">Add Task</h2>
                 <TaskForm
-                  disabled={!selectedBoardId}
+                  disabled={!selectedBoardId || isLoadingTasks}
                   isSubmitting={isCreatingTask}
                   onSubmit={handleCreateTask}
                   submitLabel={isCreatingTask ? "Saving..." : "Save Task"}
@@ -532,8 +572,18 @@ export default function BoardsPage() {
               </section>
 
               <section>
-                <h2 className="mb-3 text-lg font-semibold">Tasks</h2>
-                {tasks.length === 0 ? (
+                <div className="mb-3 flex items-center gap-2">
+                  <h2 className="text-lg font-semibold">Tasks</h2>
+                  {isLoadingTasks ? (
+                    <span className="inline-flex items-center gap-1.5 text-xs text-slate-500">
+                      <Spinner label="Loading tasks" />
+                      Loading…
+                    </span>
+                  ) : null}
+                </div>
+                {isLoadingTasks ? (
+                  <TaskListSkeleton />
+                ) : tasks.length === 0 ? (
                   <EmptyState
                     description="Add a task above to track work on this board. You can edit details, change status, and remove tasks anytime."
                     title="No tasks on this board"

@@ -5,9 +5,10 @@ import { FormEvent } from "react";
 type BoardFormProps = {
   onSubmit?: (payload: { name: string }) => Promise<void> | void;
   isSubmitting?: boolean;
+  disabled?: boolean;
 };
 
-export function BoardForm({ onSubmit, isSubmitting = false }: BoardFormProps) {
+export function BoardForm({ onSubmit, isSubmitting = false, disabled = false }: BoardFormProps) {
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
@@ -27,6 +28,7 @@ export function BoardForm({ onSubmit, isSubmitting = false }: BoardFormProps) {
         </label>
         <input
           className="w-full rounded border border-slate-300 px-3 py-2"
+          disabled={disabled}
           id="board-name"
           name="name"
           placeholder="Product Roadmap"
@@ -34,7 +36,11 @@ export function BoardForm({ onSubmit, isSubmitting = false }: BoardFormProps) {
           type="text"
         />
       </div>
-      <button className="rounded bg-slate-900 px-4 py-2 text-white disabled:opacity-60" disabled={isSubmitting} type="submit">
+      <button
+        className="rounded bg-slate-900 px-4 py-2 text-white disabled:opacity-60"
+        disabled={isSubmitting || disabled}
+        type="submit"
+      >
         {isSubmitting ? "Creating..." : "Create Board"}
       </button>
     </form>
