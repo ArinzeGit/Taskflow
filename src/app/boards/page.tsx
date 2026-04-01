@@ -1,6 +1,7 @@
 "use client";
 
 import { BoardRenameModal } from "@/components/BoardRenameModal";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { EmptyState } from "@/components/EmptyState";
 import { Header } from "@/components/Header";
 import { Sidebar } from "@/components/Sidebar";
@@ -67,6 +68,10 @@ export default function BoardsPage() {
   const [renamingBoard, setRenamingBoard] = useState<Board | null>(null);
   const [isSavingTaskEdit, setIsSavingTaskEdit] = useState(false);
   const [isSavingBoardRename, setIsSavingBoardRename] = useState(false);
+  const [boardDeleteConfirm, setBoardDeleteConfirm] = useState<{ id: string; name: string } | null>(
+    null
+  );
+  const [isDeletingBoard, setIsDeletingBoard] = useState(false);
   const channelRef = useRef<RealtimeChannel | null>(null);
 
   useEffect(() => {
@@ -386,11 +391,14 @@ export default function BoardsPage() {
     }
   }
 
-  async function handleDeleteBoard(boardId: string) {
-    if (!window.confirm("Delete this board and all its tasks? This cannot be undone.")) {
-      return;
+  function handleRequestDeleteBoard(boardId: string) {
+    const board = boards.find((b) => b.id === boardId);
+    if (board) {
+      setBoardDeleteConfirm({ id: board.id, name: board.name });
     }
+  }
 
+  async function deleteBoardById(boardId: string): Promise<boolean> {
     setErrorMessage(null);
     const previousBoards = boards;
     const wasSelected = selectedBoardId === boardId;
@@ -412,7 +420,7 @@ export default function BoardsPage() {
         if (wasSelected) {
           setSelectedBoardId(boardId);
         }
-        return;
+        return false;
       }
 
       if (editingTask?.boardId === boardId) {
@@ -421,12 +429,31 @@ export default function BoardsPage() {
       if (renamingBoard?.id === boardId) {
         setRenamingBoard(null);
       }
+      return true;
     } catch (error) {
       setBoards(previousBoards);
       if (wasSelected) {
         setSelectedBoardId(boardId);
       }
       setErrorMessage(error instanceof Error ? error.message : "Failed to delete board.");
+      return false;
+    }
+  }
+
+  async function handleConfirmDeleteBoard() {
+    if (!boardDeleteConfirm || isDeletingBoard) {
+      return;
+    }
+
+    const boardId = boardDeleteConfirm.id;
+    setIsDeletingBoard(true);
+    try {
+      const ok = await deleteBoardById(boardId);
+      if (ok) {
+        setBoardDeleteConfirm(null);
+      }
+    } finally {
+      setIsDeletingBoard(false);
     }
   }
 
@@ -475,7 +502,7 @@ export default function BoardsPage() {
           isCreatingBoard={isCreatingBoard}
           isLoadingBoards={isLoadingData}
           onCreateBoard={handleCreateBoard}
-          onDeleteBoard={handleDeleteBoard}
+          onDeleteBoard={handleRequestDeleteBoard}
           onRenameBoard={handleRenameBoardRequest}
           onSelectBoard={setSelectedBoardId}
           selectedBoardId={selectedBoardId ?? undefined}
@@ -541,6 +568,26 @@ export default function BoardsPage() {
         isSaving={isSavingBoardRename}
         onClose={() => setRenamingBoard(null)}
         onSave={handleSaveBoardRename}
+      />
+
+      <ConfirmDialog
+        cancelLabel="Cancel"
+        confirmLabel="Delete board"
+        description={
+          boardDeleteConfirm
+            ? `This will permanently delete “${boardDeleteConfirm.name}” and all tasks on it. This cannot be undone.`
+            : ""
+        }
+        isLoading={isDeletingBoard}
+        onCancel={() => {
+          if (!isDeletingBoard) {
+            setBoardDeleteConfirm(null);
+          }
+        }}
+        onConfirm={handleConfirmDeleteBoard}
+        open={!!boardDeleteConfirm}
+        title="Delete this board?"
+        tone="danger"
       />
     </div>
   );
