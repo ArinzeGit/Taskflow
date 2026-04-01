@@ -1,6 +1,7 @@
 "use client";
 
 import { BoardRenameModal } from "@/components/BoardRenameModal";
+import { EmptyState } from "@/components/EmptyState";
 import { Header } from "@/components/Header";
 import { Sidebar } from "@/components/Sidebar";
 import { TaskCard } from "@/components/TaskCard";
@@ -472,6 +473,7 @@ export default function BoardsPage() {
         <Sidebar
           boards={boards}
           isCreatingBoard={isCreatingBoard}
+          isLoadingBoards={isLoadingData}
           onCreateBoard={handleCreateBoard}
           onDeleteBoard={handleDeleteBoard}
           onRenameBoard={handleRenameBoardRequest}
@@ -483,30 +485,47 @@ export default function BoardsPage() {
           {isLoadingData ? <p className="text-sm text-slate-600">Loading boards...</p> : null}
           {errorMessage ? <p className="rounded border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">{errorMessage}</p> : null}
 
-          <section>
-            <h2 className="mb-3 text-lg font-semibold">Add Task</h2>
-            <TaskForm
-              disabled={!selectedBoardId}
-              isSubmitting={isCreatingTask}
-              onSubmit={handleCreateTask}
-              submitLabel={isCreatingTask ? "Saving..." : "Save Task"}
+          {!isLoadingData && boards.length === 0 ? (
+            <EmptyState
+              description="Create a board in the sidebar to get started. Boards keep your tasks grouped—by project, team, or anything you like."
+              title="Create your first board"
             />
-          </section>
+          ) : null}
 
-          <section>
-            <h2 className="mb-3 text-lg font-semibold">Tasks</h2>
-            <div className="grid gap-3">
-              {tasks.map((task) => (
-                <TaskCard
-                  key={task.id}
-                  onDelete={handleDeleteTask}
-                  onEdit={setEditingTask}
-                  task={task}
+          {!isLoadingData && boards.length > 0 ? (
+            <>
+              <section>
+                <h2 className="mb-3 text-lg font-semibold">Add Task</h2>
+                <TaskForm
+                  disabled={!selectedBoardId}
+                  isSubmitting={isCreatingTask}
+                  onSubmit={handleCreateTask}
+                  submitLabel={isCreatingTask ? "Saving..." : "Save Task"}
                 />
-              ))}
-            </div>
-            {!isLoadingData && tasks.length === 0 ? <p className="mt-3 text-sm text-slate-600">No tasks yet for this board.</p> : null}
-          </section>
+              </section>
+
+              <section>
+                <h2 className="mb-3 text-lg font-semibold">Tasks</h2>
+                {tasks.length === 0 ? (
+                  <EmptyState
+                    description="Add a task above to track work on this board. You can edit details, change status, and remove tasks anytime."
+                    title="No tasks on this board"
+                  />
+                ) : (
+                  <div className="grid gap-3">
+                    {tasks.map((task) => (
+                      <TaskCard
+                        key={task.id}
+                        onDelete={handleDeleteTask}
+                        onEdit={setEditingTask}
+                        task={task}
+                      />
+                    ))}
+                  </div>
+                )}
+              </section>
+            </>
+          ) : null}
         </main>
       </div>
 

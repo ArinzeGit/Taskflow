@@ -3,6 +3,7 @@
 import { Board } from "@/types";
 import { BoardCard } from "./BoardCard";
 import { BoardForm } from "./BoardForm";
+import { EmptyState } from "./EmptyState";
 
 type SidebarProps = {
   boards: Board[];
@@ -12,6 +13,7 @@ type SidebarProps = {
   onRenameBoard?: (boardId: string) => void;
   onDeleteBoard?: (boardId: string) => void;
   isCreatingBoard?: boolean;
+  isLoadingBoards?: boolean;
 };
 
 export function Sidebar({
@@ -21,8 +23,11 @@ export function Sidebar({
   onSelectBoard,
   onRenameBoard,
   onDeleteBoard,
-  isCreatingBoard = false
+  isCreatingBoard = false,
+  isLoadingBoards = false
 }: SidebarProps) {
+  const showBoardsEmpty = !isLoadingBoards && boards.length === 0;
+
   return (
     <aside className="w-full space-y-4 border-r border-slate-300 bg-slate-50 p-4 md:w-80">
       <div>
@@ -32,18 +37,26 @@ export function Sidebar({
 
       <BoardForm isSubmitting={isCreatingBoard} onSubmit={onCreateBoard} />
 
-      <div className="space-y-2">
-        {boards.map((board) => (
-          <BoardCard
-            board={board}
-            isSelected={board.id === selectedBoardId}
-            key={board.id}
-            onDelete={onDeleteBoard}
-            onRename={onRenameBoard}
-            onSelect={onSelectBoard}
-          />
-        ))}
-      </div>
+      {showBoardsEmpty ? (
+        <EmptyState
+          description="Name a board above and it will show up here. You can add several boards for different projects or teams."
+          title="No boards yet"
+          variant="compact"
+        />
+      ) : (
+        <div className="space-y-2">
+          {boards.map((board) => (
+            <BoardCard
+              board={board}
+              isSelected={board.id === selectedBoardId}
+              key={board.id}
+              onDelete={onDeleteBoard}
+              onRename={onRenameBoard}
+              onSelect={onSelectBoard}
+            />
+          ))}
+        </div>
+      )}
     </aside>
   );
 }
