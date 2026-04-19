@@ -78,6 +78,10 @@ export default function BoardsPage() {
     null
   );
   const [isDeletingBoard, setIsDeletingBoard] = useState(false);
+  const [taskDeleteConfirm, setTaskDeleteConfirm] = useState<{ id: string; title: string } | null>(
+    null
+  );
+  const [isDeletingTask, setIsDeletingTask] = useState(false);
   const [isLoadingTasks, setIsLoadingTasks] = useState(false);
   const channelRef = useRef<RealtimeChannel | null>(null);
 
@@ -527,6 +531,13 @@ export default function BoardsPage() {
     }
   }
 
+  function handleRequestDeleteTask(taskId: string) {
+    const task = tasks.find((item) => item.id === taskId);
+    if (task) {
+      setTaskDeleteConfirm({ id: task.id, title: task.title });
+    }
+  }
+
   async function handleDeleteTask(taskId: string) {
     setActionError(null);
     const previousTasks = tasks;
@@ -553,6 +564,20 @@ export default function BoardsPage() {
     } catch (error) {
       setTasks(previousTasks);
       setActionError(getActionErrorMessage(error, "Failed to delete task."));
+    }
+  }
+
+  async function handleConfirmDeleteTask() {
+    if (!taskDeleteConfirm || isDeletingTask) {
+      return;
+    }
+
+    setIsDeletingTask(true);
+    try {
+      await handleDeleteTask(taskDeleteConfirm.id);
+      setTaskDeleteConfirm(null);
+    } finally {
+      setIsDeletingTask(false);
     }
   }
 
@@ -685,7 +710,7 @@ export default function BoardsPage() {
                     {tasks.map((task) => (
                       <TaskCard
                         key={task.id}
-                        onDelete={handleDeleteTask}
+                        onDelete={handleRequestDeleteTask}
                         onEdit={setEditingTask}
                         task={task}
                       />
@@ -729,6 +754,26 @@ export default function BoardsPage() {
         onConfirm={handleConfirmDeleteBoard}
         open={!!boardDeleteConfirm}
         title="Delete this board?"
+        tone="danger"
+      />
+
+      <ConfirmDialog
+        cancelLabel="Cancel"
+        confirmLabel="Delete task"
+        description={
+          taskDeleteConfirm
+            ? `This will permanently delete “${taskDeleteConfirm.title}”. This cannot be undone.`
+            : ""
+        }
+        isLoading={isDeletingTask}
+        onCancel={() => {
+          if (!isDeletingTask) {
+            setTaskDeleteConfirm(null);
+          }
+        }}
+        onConfirm={handleConfirmDeleteTask}
+        open={!!taskDeleteConfirm}
+        title="Delete this task?"
         tone="danger"
       />
     </div>
