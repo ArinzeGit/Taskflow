@@ -4,6 +4,7 @@ import { Alert } from "@/components/Alert";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useState } from "react";
+import { getSafePostAuthRedirect } from "@/lib/auth-redirect";
 import { getErrorMessage } from "@/lib/errors";
 import { getSupabaseClient } from "@/lib/supabase";
 
@@ -23,7 +24,8 @@ export default function LoginPage() {
         const { data } = await supabase.auth.getSession();
 
         if (data.session) {
-          router.replace("/boards");
+          const next = new URLSearchParams(window.location.search).get("next");
+          router.replace(getSafePostAuthRedirect(next));
           return;
         }
       } finally {
@@ -57,7 +59,8 @@ export default function LoginPage() {
         return;
       }
 
-      router.push("/boards");
+      const next = new URLSearchParams(window.location.search).get("next");
+      router.push(getSafePostAuthRedirect(next));
       router.refresh();
     } catch (error) {
       setErrorMessage(getErrorMessage(error, "Unable to login right now."));

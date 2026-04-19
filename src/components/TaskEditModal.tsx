@@ -32,6 +32,8 @@ export function TaskEditModal({ task, onClose, onSave, isSaving = false }: TaskE
     return null;
   }
 
+  const activeTask = task;
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const trimmedTitle = title.trim();
@@ -39,7 +41,7 @@ export function TaskEditModal({ task, onClose, onSave, isSaving = false }: TaskE
       return;
     }
     await onSave({
-      id: task.id,
+      id: activeTask.id,
       title: trimmedTitle,
       description: description.trim(),
       status
