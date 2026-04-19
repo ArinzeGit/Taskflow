@@ -298,7 +298,7 @@ export default function BoardsPage() {
       const userId = sessionData.session?.user.id;
 
       if (!userId) {
-        router.replace("/login");
+        setActionError("Your session has expired. Please log in again and retry your change.");
         return;
       }
 
@@ -538,7 +538,7 @@ export default function BoardsPage() {
     }
   }
 
-  async function handleDeleteTask(taskId: string) {
+  async function handleDeleteTask(taskId: string): Promise<boolean> {
     setActionError(null);
     const previousTasks = tasks;
     setTasks((prev) => prev.filter((task) => task.id !== taskId));
@@ -553,17 +553,20 @@ export default function BoardsPage() {
       if (error) {
         setActionError(getActionErrorMessage(error.message, "Action failed."));
         setTasks(previousTasks);
-        return;
+        return false;
       }
 
       // RLS/session issues may yield 0 affected rows with no explicit error.
       if ((count ?? 0) < 1) {
         setActionError("Your session has expired. Please log in again and retry your change.");
         setTasks(previousTasks);
+        return false;
       }
+      return true;
     } catch (error) {
       setTasks(previousTasks);
       setActionError(getActionErrorMessage(error, "Failed to delete task."));
+      return false;
     }
   }
 
@@ -574,8 +577,10 @@ export default function BoardsPage() {
 
     setIsDeletingTask(true);
     try {
-      await handleDeleteTask(taskDeleteConfirm.id);
-      setTaskDeleteConfirm(null);
+      const ok = await handleDeleteTask(taskDeleteConfirm.id);
+      if (ok) {
+        setTaskDeleteConfirm(null);
+      }
     } finally {
       setIsDeletingTask(false);
     }
