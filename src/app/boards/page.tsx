@@ -11,7 +11,7 @@ import { TaskEditModal } from "@/components/TaskEditModal";
 import { Spinner } from "@/components/Spinner";
 import { TaskForm } from "@/components/TaskForm";
 import { TaskListSkeleton } from "@/components/TaskListSkeleton";
-import { getErrorMessage } from "@/lib/errors";
+import { getActionErrorMessage, getErrorMessage } from "@/lib/errors";
 import { getSupabaseClient } from "@/lib/supabase";
 import { Board, Task } from "@/types";
 import { useRouter } from "next/navigation";
@@ -305,7 +305,7 @@ export default function BoardsPage() {
         .single();
 
       if (error) {
-        setActionError(error.message);
+        setActionError(getActionErrorMessage(error.message, "Action failed."));
         return;
       }
 
@@ -313,7 +313,7 @@ export default function BoardsPage() {
       setBoards((prev) => [...prev, newBoard]);
       setSelectedBoardId(newBoard.id);
     } catch (error) {
-      setActionError(getErrorMessage(error, "Failed to create board."));
+      setActionError(getActionErrorMessage(error, "Failed to create board."));
     } finally {
       setIsCreatingBoard(false);
     }
@@ -341,13 +341,13 @@ export default function BoardsPage() {
         .single();
 
       if (error) {
-        setActionError(error.message);
+        setActionError(getActionErrorMessage(error.message, "Action failed."));
         return;
       }
 
       setTasks((prev) => [...prev, mapTask(data as TaskRow)]);
     } catch (error) {
-      setActionError(getErrorMessage(error, "Failed to create task."));
+      setActionError(getActionErrorMessage(error, "Failed to create task."));
     } finally {
       setIsCreatingTask(false);
     }
@@ -392,7 +392,7 @@ export default function BoardsPage() {
         .single();
 
       if (error) {
-        setActionError(error.message);
+        setActionError(getActionErrorMessage(error.message, "Action failed."));
         setTasks(previousTasks);
         return;
       }
@@ -403,7 +403,7 @@ export default function BoardsPage() {
       setEditingTask(null);
     } catch (error) {
       setTasks(previousTasks);
-      setActionError(getErrorMessage(error, "Failed to update task."));
+      setActionError(getActionErrorMessage(error, "Failed to update task."));
     } finally {
       setIsSavingTaskEdit(false);
     }
@@ -439,7 +439,7 @@ export default function BoardsPage() {
         .single();
 
       if (error) {
-        setActionError(error.message);
+        setActionError(getActionErrorMessage(error.message, "Action failed."));
         setBoards(previousBoards);
         return;
       }
@@ -450,7 +450,7 @@ export default function BoardsPage() {
       setRenamingBoard(null);
     } catch (error) {
       setBoards(previousBoards);
-      setActionError(getErrorMessage(error, "Failed to rename board."));
+      setActionError(getActionErrorMessage(error, "Failed to rename board."));
     } finally {
       setIsSavingBoardRename(false);
     }
@@ -480,7 +480,7 @@ export default function BoardsPage() {
       const { error } = await supabase.from("boards").delete().eq("id", boardId);
 
       if (error) {
-        setActionError(error.message);
+        setActionError(getActionErrorMessage(error.message, "Action failed."));
         setBoards(previousBoards);
         if (wasSelected) {
           setSelectedBoardId(boardId);
@@ -500,7 +500,7 @@ export default function BoardsPage() {
       if (wasSelected) {
         setSelectedBoardId(boardId);
       }
-      setActionError(getErrorMessage(error, "Failed to delete board."));
+      setActionError(getActionErrorMessage(error, "Failed to delete board."));
       return false;
     }
   }
@@ -529,15 +529,25 @@ export default function BoardsPage() {
 
     try {
       const supabase = getSupabaseClient();
-      const { error } = await supabase.from("tasks").delete().eq("id", taskId);
+      const { count, error } = await supabase
+        .from("tasks")
+        .delete({ count: "exact" })
+        .eq("id", taskId);
 
       if (error) {
-        setActionError(error.message);
+        setActionError(getActionErrorMessage(error.message, "Action failed."));
+        setTasks(previousTasks);
+        return;
+      }
+
+      // RLS/session issues may yield 0 affected rows with no explicit error.
+      if ((count ?? 0) < 1) {
+        setActionError("Your session has expired. Please log in again and retry your change.");
         setTasks(previousTasks);
       }
     } catch (error) {
       setTasks(previousTasks);
-      setActionError(getErrorMessage(error, "Failed to delete task."));
+      setActionError(getActionErrorMessage(error, "Failed to delete task."));
     }
   }
 
