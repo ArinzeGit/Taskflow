@@ -465,27 +465,36 @@ export default function BoardsPage() {
 
   async function deleteBoardById(boardId: string): Promise<boolean> {
     setActionError(null);
-    const previousBoards = boards;
     const wasSelected = selectedBoardId === boardId;
-    const remaining = previousBoards.filter((b) => b.id !== boardId);
-
-    setBoards(remaining);
-    if (wasSelected) {
-      setSelectedBoardId(remaining[0]?.id ?? null);
-      setTasks([]);
-    }
 
     try {
       const supabase = getSupabaseClient();
-      const { error } = await supabase.from("boards").delete().eq("id", boardId);
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData.session) {
+        setActionError("Your session has expired. Please log in again and retry your change.");
+        return false;
+      }
+
+      const { count, error } = await supabase
+        .from("boards")
+        .delete({ count: "exact" })
+        .eq("id", boardId);
 
       if (error) {
         setActionError(getActionErrorMessage(error.message, "Action failed."));
-        setBoards(previousBoards);
-        if (wasSelected) {
-          setSelectedBoardId(boardId);
-        }
         return false;
+      }
+
+      if ((count ?? 0) < 1) {
+        setActionError("Your session has expired. Please log in again and retry your change.");
+        return false;
+      }
+
+      const remaining = boards.filter((b) => b.id !== boardId);
+      setBoards(remaining);
+      if (wasSelected) {
+        setSelectedBoardId(remaining[0]?.id ?? null);
+        setTasks([]);
       }
 
       if (editingTask?.boardId === boardId) {
@@ -496,10 +505,6 @@ export default function BoardsPage() {
       }
       return true;
     } catch (error) {
-      setBoards(previousBoards);
-      if (wasSelected) {
-        setSelectedBoardId(boardId);
-      }
       setActionError(getActionErrorMessage(error, "Failed to delete board."));
       return false;
     }
