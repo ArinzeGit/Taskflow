@@ -15,6 +15,8 @@ export function getActionErrorMessage(error: unknown, fallback: string): string 
 
   if (
     normalized.includes("cannot coerce the result to a single json object") ||
+    normalized.includes("violates row-level security policy") ||
+    normalized.includes("row-level security policy") ||
     normalized.includes("jwt expired") ||
     normalized.includes("auth session missing") ||
     normalized.includes("invalid refresh token") ||
