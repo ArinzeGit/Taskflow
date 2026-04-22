@@ -13,6 +13,7 @@ type SidebarProps = {
   onSelectBoard?: (boardId: string) => void;
   onRenameBoard?: (boardId: string) => void;
   onDeleteBoard?: (boardId: string) => void;
+  onRetryLoadBoards?: () => void;
   isCreatingBoard?: boolean;
   isLoadingBoards?: boolean;
   /** When set, suppresses empty state; list area stays minimal (details + retry live in main column). */
@@ -26,6 +27,7 @@ export function Sidebar({
   onSelectBoard,
   onRenameBoard,
   onDeleteBoard,
+  onRetryLoadBoards,
   isCreatingBoard = false,
   isLoadingBoards = false,
   boardsLoadError = null
@@ -35,9 +37,18 @@ export function Sidebar({
   function renderBoardList() {
     if (boardsLoadError) {
       return (
-        <p className="rounded border border-rose-100 bg-rose-50/80 px-3 py-2 text-xs text-rose-800">
-          Boards could not be loaded. Use <span className="font-medium">Try again</span> in the main area.
-        </p>
+        <div className="rounded border border-rose-100 bg-rose-50/80 px-3 py-2 text-xs text-rose-800">
+          <p className="mb-2">Boards could not be loaded.</p>
+          {onRetryLoadBoards ? (
+            <button
+              className="w-full rounded border border-rose-200 bg-white px-2 py-1.5 text-xs font-medium text-rose-900 hover:bg-rose-100"
+              onClick={() => onRetryLoadBoards()}
+              type="button"
+            >
+              Try again
+            </button>
+          ) : null}
+        </div>
       );
     }
     if (isLoadingBoards) {

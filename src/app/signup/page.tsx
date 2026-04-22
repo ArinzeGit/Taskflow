@@ -1,9 +1,9 @@
 "use client";
 
-import { Alert } from "@/components/Alert";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useState } from "react";
+import { toast } from "sonner";
 import { getErrorMessage } from "@/lib/errors";
 import { getSupabaseClient } from "@/lib/supabase";
 
@@ -11,8 +11,6 @@ export default function SignupPage() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isCheckingSession, setIsCheckingSession] = useState(true);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   useEffect(() => {
     async function redirectIfAuthenticated() {
@@ -34,8 +32,6 @@ export default function SignupPage() {
 
   async function handleSignup(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setErrorMessage(null);
-    setSuccessMessage(null);
     setIsSubmitting(true);
 
     const formData = new FormData(event.currentTarget);
@@ -47,7 +43,7 @@ export default function SignupPage() {
       const { data, error } = await supabase.auth.signUp({ email, password });
 
       if (error) {
-        setErrorMessage(error.message);
+        toast.error("Sign up failed", { description: error.message });
         return;
       }
 
@@ -57,10 +53,12 @@ export default function SignupPage() {
         return;
       }
 
-      setSuccessMessage("Signup successful. Check your email for a confirmation link, then log in.");
+      toast.success("Account created. Check your email for a confirmation link, then log in.");
       router.push("/login");
     } catch (error) {
-      setErrorMessage(getErrorMessage(error, "Unable to sign up right now."));
+      toast.error("Sign up failed", {
+        description: getErrorMessage(error, "Unable to sign up right now.")
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -107,16 +105,6 @@ export default function SignupPage() {
         <button className="w-full rounded bg-slate-900 px-4 py-2 text-white" type="submit">
           {isSubmitting ? "Creating account..." : "Sign up"}
         </button>
-        {errorMessage ? (
-          <Alert onDismiss={() => setErrorMessage(null)} title="Sign up failed" variant="error">
-            {errorMessage}
-          </Alert>
-        ) : null}
-        {successMessage ? (
-          <Alert onDismiss={() => setSuccessMessage(null)} variant="success">
-            {successMessage}
-          </Alert>
-        ) : null}
       </form>
 
       <p className="mt-4 text-sm text-slate-600">

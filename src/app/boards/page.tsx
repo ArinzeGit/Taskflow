@@ -1,6 +1,5 @@
 "use client";
 
-import { Alert } from "@/components/Alert";
 import { BoardRenameModal } from "@/components/BoardRenameModal";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { EmptyState } from "@/components/EmptyState";
@@ -16,6 +15,7 @@ import { getSupabaseClient } from "@/lib/supabase";
 import { Board, Task } from "@/types";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 import type { RealtimeChannel } from "@supabase/supabase-js";
 
 type BoardRow = {
@@ -66,7 +66,6 @@ export default function BoardsPage() {
   const [isCreatingTask, setIsCreatingTask] = useState(false);
   const [boardsLoadError, setBoardsLoadError] = useState<string | null>(null);
   const [tasksLoadError, setTasksLoadError] = useState<string | null>(null);
-  const [actionError, setActionError] = useState<string | null>(null);
   const [boards, setBoards] = useState<Board[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [selectedBoardId, setSelectedBoardId] = useState<string | null>(null);
@@ -115,7 +114,12 @@ export default function BoardsPage() {
         .order("created_at", { ascending: true });
 
       if (boardsError) {
-        setBoardsLoadError(boardsError.message);
+        const msg = getActionErrorMessage(boardsError.message, boardsError.message);
+        setBoardsLoadError(msg);
+        toast.error("Couldn't load boards", {
+          description: msg,
+          action: { label: "Retry", onClick: () => void loadBoards() }
+        });
         return;
       }
 
@@ -130,7 +134,12 @@ export default function BoardsPage() {
 
       setSelectedBoardId((prev) => prev ?? mappedBoards[0].id);
     } catch (error) {
-      setBoardsLoadError(getErrorMessage(error, "Failed to load boards."));
+      const msg = getErrorMessage(error, "Failed to load boards.");
+      setBoardsLoadError(msg);
+      toast.error("Couldn't load boards", {
+        description: msg,
+        action: { label: "Retry", onClick: () => void loadBoards() }
+      });
     } finally {
       setIsLoadingData(false);
     }
@@ -157,6 +166,46 @@ export default function BoardsPage() {
     setTasks([]);
   }, [selectedBoardId]);
 
+  const retryLoadTasks = useCallback(async () => {
+    if (!selectedBoardId) {
+      return;
+    }
+
+    setTasksLoadError(null);
+    setIsLoadingTasks(true);
+    setTasks([]);
+
+    try {
+      const supabase = getSupabaseClient();
+      const { data: tasksData, error: tasksError } = await supabase
+        .from("tasks")
+        .select("id,board_id,title,description,status,assignee_id,created_at,updated_at")
+        .eq("board_id", selectedBoardId)
+        .order("created_at", { ascending: true });
+
+      if (tasksError) {
+        const msg = getActionErrorMessage(tasksError.message, tasksError.message);
+        setTasksLoadError(msg);
+        toast.error("Couldn't load tasks", {
+          description: msg,
+          action: { label: "Retry", onClick: () => void retryLoadTasks() }
+        });
+        return;
+      }
+
+      setTasks((tasksData ?? []).map((task) => mapTask(task as TaskRow)));
+    } catch (error) {
+      const msg = getErrorMessage(error, "Failed to load tasks.");
+      setTasksLoadError(msg);
+      toast.error("Couldn't load tasks", {
+        description: msg,
+        action: { label: "Retry", onClick: () => void retryLoadTasks() }
+      });
+    } finally {
+      setIsLoadingTasks(false);
+    }
+  }, [selectedBoardId]);
+
   useEffect(() => {
     if (!selectedBoardId) {
       return;
@@ -178,14 +227,24 @@ export default function BoardsPage() {
         }
 
         if (tasksError) {
-          setTasksLoadError(tasksError.message);
+          const msg = getActionErrorMessage(tasksError.message, tasksError.message);
+          setTasksLoadError(msg);
+          toast.error("Couldn't load tasks", {
+            description: msg,
+            action: { label: "Retry", onClick: () => void retryLoadTasks() }
+          });
           return;
         }
 
         setTasks((tasksData ?? []).map((task) => mapTask(task as TaskRow)));
       } catch (error) {
         if (!cancelled) {
-          setTasksLoadError(getErrorMessage(error, "Failed to load tasks."));
+          const msg = getErrorMessage(error, "Failed to load tasks.");
+          setTasksLoadError(msg);
+          toast.error("Couldn't load tasks", {
+            description: msg,
+            action: { label: "Retry", onClick: () => void retryLoadTasks() }
+          });
         }
       } finally {
         if (!cancelled) {
@@ -199,37 +258,7 @@ export default function BoardsPage() {
     return () => {
       cancelled = true;
     };
-  }, [selectedBoardId]);
-
-  const retryLoadTasks = useCallback(async () => {
-    if (!selectedBoardId) {
-      return;
-    }
-
-    setTasksLoadError(null);
-    setIsLoadingTasks(true);
-    setTasks([]);
-
-    try {
-      const supabase = getSupabaseClient();
-      const { data: tasksData, error: tasksError } = await supabase
-        .from("tasks")
-        .select("id,board_id,title,description,status,assignee_id,created_at,updated_at")
-        .eq("board_id", selectedBoardId)
-        .order("created_at", { ascending: true });
-
-      if (tasksError) {
-        setTasksLoadError(tasksError.message);
-        return;
-      }
-
-      setTasks((tasksData ?? []).map((task) => mapTask(task as TaskRow)));
-    } catch (error) {
-      setTasksLoadError(getErrorMessage(error, "Failed to load tasks."));
-    } finally {
-      setIsLoadingTasks(false);
-    }
-  }, [selectedBoardId]);
+  }, [selectedBoardId, retryLoadTasks]);
 
   useEffect(() => {
     if (!selectedBoardId) {
@@ -259,7 +288,12 @@ export default function BoardsPage() {
             .order("created_at", { ascending: true });
 
           if (error) {
-            setTasksLoadError(error.message);
+            const msg = getActionErrorMessage(error.message, error.message);
+            setTasksLoadError(msg);
+            toast.error("Couldn't refresh tasks", {
+              description: msg,
+              action: { label: "Retry", onClick: () => void retryLoadTasks() }
+            });
             return;
           }
           setTasks((data ?? []).map((task) => mapTask(task as TaskRow)));
@@ -275,7 +309,7 @@ export default function BoardsPage() {
         channelRef.current = null;
       }
     };
-  }, [selectedBoardId]);
+  }, [selectedBoardId, retryLoadTasks]);
 
   async function handleLogout() {
     const supabase = getSupabaseClient();
@@ -290,7 +324,6 @@ export default function BoardsPage() {
 
   async function handleCreateBoard(payload: { name: string }) {
     setIsCreatingBoard(true);
-    setActionError(null);
 
     try {
       const supabase = getSupabaseClient();
@@ -298,7 +331,7 @@ export default function BoardsPage() {
       const userId = sessionData.session?.user.id;
 
       if (!userId) {
-        setActionError("Your session has expired. Please log in again and retry your change.");
+        toast.error("Your session has expired. Please log in again and retry your change.");
         return;
       }
 
@@ -309,15 +342,16 @@ export default function BoardsPage() {
         .single();
 
       if (error) {
-        setActionError(getActionErrorMessage(error.message, "Action failed."));
+        toast.error(getActionErrorMessage(error.message, "Action failed."));
         return;
       }
 
       const newBoard = mapBoard(data as BoardRow);
       setBoards((prev) => [...prev, newBoard]);
       setSelectedBoardId(newBoard.id);
+      toast.success("Board created");
     } catch (error) {
-      setActionError(getActionErrorMessage(error, "Failed to create board."));
+      toast.error(getActionErrorMessage(error, "Failed to create board."));
     } finally {
       setIsCreatingBoard(false);
     }
@@ -329,7 +363,6 @@ export default function BoardsPage() {
     }
 
     setIsCreatingTask(true);
-    setActionError(null);
 
     try {
       const supabase = getSupabaseClient();
@@ -345,13 +378,14 @@ export default function BoardsPage() {
         .single();
 
       if (error) {
-        setActionError(getActionErrorMessage(error.message, "Action failed."));
+        toast.error(getActionErrorMessage(error.message, "Action failed."));
         return;
       }
 
       setTasks((prev) => [...prev, mapTask(data as TaskRow)]);
+      toast.success("Task created");
     } catch (error) {
-      setActionError(getActionErrorMessage(error, "Failed to create task."));
+      toast.error(getActionErrorMessage(error, "Failed to create task."));
     } finally {
       setIsCreatingTask(false);
     }
@@ -364,7 +398,6 @@ export default function BoardsPage() {
     status: Task["status"];
   }) {
     setIsSavingTaskEdit(true);
-    setActionError(null);
     const previousTasks = tasks;
     const now = new Date().toISOString();
     setTasks((prev) =>
@@ -396,7 +429,7 @@ export default function BoardsPage() {
         .single();
 
       if (error) {
-        setActionError(getActionErrorMessage(error.message, "Action failed."));
+        toast.error(getActionErrorMessage(error.message, "Action failed."));
         setTasks(previousTasks);
         return;
       }
@@ -405,9 +438,10 @@ export default function BoardsPage() {
         prev.map((item) => (item.id === payload.id ? mapTask(data as TaskRow) : item))
       );
       setEditingTask(null);
+      toast.success("Task updated");
     } catch (error) {
       setTasks(previousTasks);
-      setActionError(getActionErrorMessage(error, "Failed to update task."));
+      toast.error(getActionErrorMessage(error, "Failed to update task."));
     } finally {
       setIsSavingTaskEdit(false);
     }
@@ -426,7 +460,6 @@ export default function BoardsPage() {
     }
 
     setIsSavingBoardRename(true);
-    setActionError(null);
     const previousBoards = boards;
 
     setBoards((prev) =>
@@ -443,7 +476,7 @@ export default function BoardsPage() {
         .single();
 
       if (error) {
-        setActionError(getActionErrorMessage(error.message, "Action failed."));
+        toast.error(getActionErrorMessage(error.message, "Action failed."));
         setBoards(previousBoards);
         return;
       }
@@ -452,9 +485,10 @@ export default function BoardsPage() {
         prev.map((b) => (b.id === renamingBoard.id ? mapBoard(data as BoardRow) : b))
       );
       setRenamingBoard(null);
+      toast.success("Board renamed");
     } catch (error) {
       setBoards(previousBoards);
-      setActionError(getActionErrorMessage(error, "Failed to rename board."));
+      toast.error(getActionErrorMessage(error, "Failed to rename board."));
     } finally {
       setIsSavingBoardRename(false);
     }
@@ -468,14 +502,13 @@ export default function BoardsPage() {
   }
 
   async function deleteBoardById(boardId: string): Promise<boolean> {
-    setActionError(null);
     const wasSelected = selectedBoardId === boardId;
 
     try {
       const supabase = getSupabaseClient();
       const { data: sessionData } = await supabase.auth.getSession();
       if (!sessionData.session) {
-        setActionError("Your session has expired. Please log in again and retry your change.");
+        toast.error("Your session has expired. Please log in again and retry your change.");
         return false;
       }
 
@@ -485,12 +518,12 @@ export default function BoardsPage() {
         .eq("id", boardId);
 
       if (error) {
-        setActionError(getActionErrorMessage(error.message, "Action failed."));
+        toast.error(getActionErrorMessage(error.message, "Action failed."));
         return false;
       }
 
       if ((count ?? 0) < 1) {
-        setActionError("Your session has expired. Please log in again and retry your change.");
+        toast.error("Your session has expired. Please log in again and retry your change.");
         return false;
       }
 
@@ -509,7 +542,7 @@ export default function BoardsPage() {
       }
       return true;
     } catch (error) {
-      setActionError(getActionErrorMessage(error, "Failed to delete board."));
+      toast.error(getActionErrorMessage(error, "Failed to delete board."));
       return false;
     }
   }
@@ -525,6 +558,7 @@ export default function BoardsPage() {
       const ok = await deleteBoardById(boardId);
       if (ok) {
         setBoardDeleteConfirm(null);
+        toast.success("Board deleted");
       }
     } finally {
       setIsDeletingBoard(false);
@@ -539,7 +573,6 @@ export default function BoardsPage() {
   }
 
   async function handleDeleteTask(taskId: string): Promise<boolean> {
-    setActionError(null);
     const previousTasks = tasks;
     setTasks((prev) => prev.filter((task) => task.id !== taskId));
 
@@ -551,21 +584,21 @@ export default function BoardsPage() {
         .eq("id", taskId);
 
       if (error) {
-        setActionError(getActionErrorMessage(error.message, "Action failed."));
+        toast.error(getActionErrorMessage(error.message, "Action failed."));
         setTasks(previousTasks);
         return false;
       }
 
       // RLS/session issues may yield 0 affected rows with no explicit error.
       if ((count ?? 0) < 1) {
-        setActionError("Your session has expired. Please log in again and retry your change.");
+        toast.error("Your session has expired. Please log in again and retry your change.");
         setTasks(previousTasks);
         return false;
       }
       return true;
     } catch (error) {
       setTasks(previousTasks);
-      setActionError(getActionErrorMessage(error, "Failed to delete task."));
+      toast.error(getActionErrorMessage(error, "Failed to delete task."));
       return false;
     }
   }
@@ -580,6 +613,7 @@ export default function BoardsPage() {
       const ok = await handleDeleteTask(taskDeleteConfirm.id);
       if (ok) {
         setTaskDeleteConfirm(null);
+        toast.success("Task deleted");
       }
     } finally {
       setIsDeletingTask(false);
@@ -616,36 +650,12 @@ export default function BoardsPage() {
           onCreateBoard={handleCreateBoard}
           onDeleteBoard={handleRequestDeleteBoard}
           onRenameBoard={handleRenameBoardRequest}
+          onRetryLoadBoards={() => void loadBoards()}
           onSelectBoard={setSelectedBoardId}
           selectedBoardId={selectedBoardId ?? undefined}
         />
 
         <main className="flex-1 space-y-6 p-6">
-          {actionError ? (
-            <Alert onDismiss={() => setActionError(null)} title="Something went wrong" variant="error">
-              {actionError}
-            </Alert>
-          ) : null}
-
-          {boardsLoadError ? (
-            <Alert
-              actions={
-                <button
-                  className="rounded border border-rose-300 bg-white px-3 py-1.5 text-sm font-medium text-rose-900 hover:bg-rose-100"
-                  onClick={() => void loadBoards()}
-                  type="button"
-                >
-                  Try again
-                </button>
-              }
-              onDismiss={() => setBoardsLoadError(null)}
-              title="Couldn’t load boards"
-              variant="error"
-            >
-              {boardsLoadError}
-            </Alert>
-          ) : null}
-
           {isLoadingData ? (
             <div
               aria-busy="true"
@@ -686,23 +696,17 @@ export default function BoardsPage() {
                     </span>
                   ) : null}
                 </div>
-                {tasksLoadError ? (
-                  <Alert
-                    actions={
-                      <button
-                        className="rounded border border-rose-300 bg-white px-3 py-1.5 text-sm font-medium text-rose-900 hover:bg-rose-100"
-                        onClick={() => void retryLoadTasks()}
-                        type="button"
-                      >
-                        Try again
-                      </button>
-                    }
-                    onDismiss={() => setTasksLoadError(null)}
-                    title="Couldn’t load tasks"
-                    variant="error"
-                  >
-                    {tasksLoadError}
-                  </Alert>
+                {tasksLoadError && !isLoadingTasks ? (
+                  <div className="rounded border border-dashed border-slate-200 bg-slate-50/80 px-4 py-6 text-center text-sm text-slate-600">
+                    <p className="mb-3">Tasks couldn’t be loaded.</p>
+                    <button
+                      className="rounded border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-900 hover:bg-slate-50"
+                      onClick={() => void retryLoadTasks()}
+                      type="button"
+                    >
+                      Try again
+                    </button>
+                  </div>
                 ) : isLoadingTasks ? (
                   <TaskListSkeleton />
                 ) : tasks.length === 0 ? (

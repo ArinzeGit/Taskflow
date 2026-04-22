@@ -1,9 +1,9 @@
 "use client";
 
-import { Alert } from "@/components/Alert";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useState } from "react";
+import { toast } from "sonner";
 import { getSafePostAuthRedirect } from "@/lib/auth-redirect";
 import { getErrorMessage } from "@/lib/errors";
 import { getSupabaseClient } from "@/lib/supabase";
@@ -13,8 +13,6 @@ export default function LoginPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isResending, setIsResending] = useState(false);
   const [isCheckingSession, setIsCheckingSession] = useState(true);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [infoMessage, setInfoMessage] = useState<string | null>(null);
   const [pendingEmailConfirmation, setPendingEmailConfirmation] = useState<string | null>(null);
 
   useEffect(() => {
@@ -38,8 +36,6 @@ export default function LoginPage() {
 
   async function handleLogin(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setErrorMessage(null);
-    setInfoMessage(null);
     setPendingEmailConfirmation(null);
     setIsSubmitting(true);
 
@@ -52,7 +48,7 @@ export default function LoginPage() {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
 
       if (error) {
-        setErrorMessage(error.message);
+        toast.error("Login failed", { description: error.message });
         if (error.message.toLowerCase().includes("email not confirmed")) {
           setPendingEmailConfirmation(email);
         }
@@ -63,7 +59,9 @@ export default function LoginPage() {
       router.push(getSafePostAuthRedirect(next));
       router.refresh();
     } catch (error) {
-      setErrorMessage(getErrorMessage(error, "Unable to login right now."));
+      toast.error("Login failed", {
+        description: getErrorMessage(error, "Unable to login right now.")
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -75,8 +73,6 @@ export default function LoginPage() {
     }
 
     setIsResending(true);
-    setErrorMessage(null);
-    setInfoMessage(null);
 
     try {
       const supabase = getSupabaseClient();
@@ -86,13 +82,15 @@ export default function LoginPage() {
       });
 
       if (error) {
-        setErrorMessage(error.message);
+        toast.error("Couldn’t resend email", { description: error.message });
         return;
       }
 
-      setInfoMessage("Confirmation email resent. Check your inbox and spam folder.");
+      toast.success("Confirmation email sent. Check your inbox and spam folder.");
     } catch (error) {
-      setErrorMessage(getErrorMessage(error, "Unable to resend confirmation email."));
+      toast.error("Couldn’t resend email", {
+        description: getErrorMessage(error, "Unable to resend confirmation email.")
+      });
     } finally {
       setIsResending(false);
     }
@@ -139,11 +137,6 @@ export default function LoginPage() {
         <button className="w-full rounded bg-slate-900 px-4 py-2 text-white" type="submit">
           {isSubmitting ? "Logging in..." : "Login"}
         </button>
-        {errorMessage ? (
-          <Alert onDismiss={() => setErrorMessage(null)} title="Login failed" variant="error">
-            {errorMessage}
-          </Alert>
-        ) : null}
         {pendingEmailConfirmation ? (
           <button
             className="w-full rounded border border-slate-300 px-4 py-2 text-sm text-slate-700 disabled:opacity-60"
@@ -153,11 +146,6 @@ export default function LoginPage() {
           >
             {isResending ? "Resending..." : "Resend confirmation email"}
           </button>
-        ) : null}
-        {infoMessage ? (
-          <Alert onDismiss={() => setInfoMessage(null)} variant="success">
-            {infoMessage}
-          </Alert>
         ) : null}
       </form>
 
