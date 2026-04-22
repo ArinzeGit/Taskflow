@@ -18,11 +18,11 @@ export function BoardCard({
   return (
     <div
       className={`overflow-hidden rounded-md border transition ${
-        isSelected ? "border-slate-900 bg-slate-200" : "border-slate-300 bg-white"
+        isSelected ? "border-blue-600 bg-blue-100" : "border-slate-300 bg-white"
       }`}
     >
       <button
-        className="w-full px-3 py-2 text-left hover:bg-slate-50/80"
+        className="w-full px-3 py-2 text-left hover:bg-blue-50"
         onClick={() => onSelect?.(board.id)}
         type="button"
       >
@@ -31,7 +31,7 @@ export function BoardCard({
       </button>
       <div className="flex gap-2 border-t border-slate-200 bg-slate-50/80 px-2 py-1.5">
         <button
-          className="rounded px-2 py-1 text-xs text-slate-700 hover:bg-slate-200"
+          className="rounded px-2 py-1 text-xs text-blue-900 hover:bg-blue-100"
           onClick={(e) => {
             e.stopPropagation();
             onRename?.(board.id);

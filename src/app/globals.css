@@ -4,8 +4,50 @@
 
 :root {
   color-scheme: light;
+  --theme-primary: #3b82f6;
+  --theme-bg-light: #dbeafe;
+  --theme-hover: #60a5fa;
+  --theme-active: #2563eb;
+  --theme-dark: #1e3a8a;
 }
 
 body {
   @apply bg-slate-100 text-slate-900 antialiased;
+}
+
+@layer base {
+  a {
+    color: var(--theme-active);
+  }
+
+  a:hover {
+    color: var(--theme-dark);
+  }
+
+  button:focus-visible,
+  a:focus-visible,
+  input:focus-visible,
+  textarea:focus-visible,
+  select:focus-visible {
+    outline: 2px solid var(--theme-primary);
+    outline-offset: 2px;
+  }
+
+  input,
+  textarea,
+  select {
+    @apply transition-colors;
+  }
+
+  input:focus,
+  textarea:focus,
+  select:focus {
+    border-color: var(--theme-primary);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+  }
+
+  ::selection {
+    background: var(--theme-bg-light);
+    color: var(--theme-dark);
+  }
 }

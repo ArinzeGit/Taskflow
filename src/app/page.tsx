@@ -8,13 +8,13 @@ export default function HomePage() {
         Starter project is ready. Begin with authentication, then board and task logic.
       </p>
       <div className="flex flex-wrap justify-center gap-3">
-        <Link className="rounded-md bg-slate-900 px-4 py-2 text-white" href="/login">
+        <Link className="rounded-md bg-blue-500 px-4 py-2 text-white hover:bg-blue-400 active:bg-blue-600" href="/login">
           Go to Login
         </Link>
-        <Link className="rounded-md bg-slate-700 px-4 py-2 text-white" href="/signup">
+        <Link className="rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-400 active:bg-blue-700" href="/signup">
           Go to Signup
         </Link>
-        <Link className="rounded-md bg-slate-600 px-4 py-2 text-white" href="/boards">
+        <Link className="rounded-md border border-blue-600 bg-white px-4 py-2 text-blue-800 hover:bg-blue-100 active:bg-blue-200" href="/boards">
           Go to Boards
         </Link>
       </div>

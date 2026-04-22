@@ -102,14 +102,17 @@ export default function SignupPage() {
             type="password"
           />
         </div>
-        <button className="w-full rounded bg-slate-900 px-4 py-2 text-white" type="submit">
+        <button
+          className="w-full rounded bg-blue-500 px-4 py-2 text-white transition-colors hover:bg-blue-400 active:bg-blue-600"
+          type="submit"
+        >
           {isSubmitting ? "Creating account..." : "Sign up"}
         </button>
       </form>
 
       <p className="mt-4 text-sm text-slate-600">
         Already have an account?{" "}
-        <Link className="font-medium text-slate-900 underline" href="/login">
+        <Link className="font-medium text-blue-700 underline hover:text-blue-900" href="/login">
           Login
         </Link>
       </p>

@@ -633,7 +633,11 @@ export default function BoardsPage() {
     <div className="min-h-screen bg-slate-100">
       <Header
         actions={
-          <button className="rounded bg-slate-900 px-3 py-2 text-sm text-white" onClick={handleLogout} type="button">
+          <button
+            className="rounded bg-blue-500 px-3 py-2 text-sm text-white transition-colors hover:bg-blue-400 active:bg-blue-600"
+            onClick={handleLogout}
+            type="button"
+          >
             Logout
           </button>
         }
@@ -697,10 +701,10 @@ export default function BoardsPage() {
                   ) : null}
                 </div>
                 {tasksLoadError && !isLoadingTasks ? (
-                  <div className="rounded border border-dashed border-slate-200 bg-slate-50/80 px-4 py-6 text-center text-sm text-slate-600">
+                  <div className="rounded border border-dashed border-blue-200 bg-blue-50 px-4 py-6 text-center text-sm text-blue-900">
                     <p className="mb-3">Tasks couldn’t be loaded.</p>
                     <button
-                      className="rounded border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-900 hover:bg-slate-50"
+                      className="rounded border border-blue-300 bg-white px-3 py-1.5 text-sm font-medium text-blue-900 hover:bg-blue-100 active:bg-blue-200"
                       onClick={() => void retryLoadTasks()}
                       type="button"
                     >

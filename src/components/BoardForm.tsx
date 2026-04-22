@@ -37,7 +37,7 @@ export function BoardForm({ onSubmit, isSubmitting = false, disabled = false }: 
         />
       </div>
       <button
-        className="rounded bg-slate-900 px-4 py-2 text-white disabled:opacity-60"
+        className="rounded bg-blue-500 px-4 py-2 text-white transition-colors hover:bg-blue-400 active:bg-blue-600 disabled:opacity-60"
         disabled={isSubmitting || disabled}
         type="submit"
       >

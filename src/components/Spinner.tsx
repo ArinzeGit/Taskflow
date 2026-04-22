@@ -12,7 +12,7 @@ export function Spinner({ label = "Loading", className = "", size = "sm" }: Spin
     <span className={`inline-flex shrink-0 items-center justify-center ${className}`} role="status">
       <span
         aria-hidden
-        className={`${sizeClass} animate-spin rounded-full border-slate-300 border-t-slate-700`}
+        className={`${sizeClass} animate-spin rounded-full border-blue-100 border-t-blue-600`}
       />
       <span className="sr-only">{label}</span>
     </span>

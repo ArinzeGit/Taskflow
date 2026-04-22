@@ -134,12 +134,15 @@ export default function LoginPage() {
             type="password"
           />
         </div>
-        <button className="w-full rounded bg-slate-900 px-4 py-2 text-white" type="submit">
+        <button
+          className="w-full rounded bg-blue-500 px-4 py-2 text-white transition-colors hover:bg-blue-400 active:bg-blue-600"
+          type="submit"
+        >
           {isSubmitting ? "Logging in..." : "Login"}
         </button>
         {pendingEmailConfirmation ? (
           <button
-            className="w-full rounded border border-slate-300 px-4 py-2 text-sm text-slate-700 disabled:opacity-60"
+            className="w-full rounded border border-blue-300 bg-blue-50 px-4 py-2 text-sm text-blue-900 transition-colors hover:bg-blue-100 disabled:opacity-60"
             disabled={isResending}
             onClick={handleResendConfirmation}
             type="button"
@@ -151,7 +154,7 @@ export default function LoginPage() {
 
       <p className="mt-4 text-sm text-slate-600">
         Need an account?{" "}
-        <Link className="font-medium text-slate-900 underline" href="/signup">
+        <Link className="font-medium text-blue-700 underline hover:text-blue-900" href="/signup">
           Sign up
         </Link>
       </p>

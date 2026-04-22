@@ -106,7 +106,7 @@ export function TaskEditModal({ task, onClose, onSave, isSaving = false }: TaskE
           </div>
           <div className="flex justify-end gap-2 pt-2">
             <button
-              className="rounded border border-slate-300 px-4 py-2 text-sm"
+              className="rounded border border-slate-300 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"
               disabled={isSaving}
               onClick={onClose}
               type="button"
@@ -114,7 +114,7 @@ export function TaskEditModal({ task, onClose, onSave, isSaving = false }: TaskE
               Cancel
             </button>
             <button
-              className="rounded bg-slate-900 px-4 py-2 text-sm text-white disabled:opacity-60"
+              className="rounded bg-blue-500 px-4 py-2 text-sm text-white transition-colors hover:bg-blue-400 active:bg-blue-600 disabled:opacity-60"
               disabled={isSaving}
               type="submit"
             >

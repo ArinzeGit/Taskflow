@@ -51,7 +51,11 @@ export function TaskForm({ onSubmit, submitLabel = "Save Task", isSubmitting = f
           rows={3}
         />
       </div>
-      <button className="rounded bg-slate-900 px-4 py-2 text-white disabled:opacity-60" disabled={isSubmitting || disabled} type="submit">
+      <button
+        className="rounded bg-blue-500 px-4 py-2 text-white transition-colors hover:bg-blue-400 active:bg-blue-600 disabled:opacity-60"
+        disabled={isSubmitting || disabled}
+        type="submit"
+      >
         {submitLabel}
       </button>
     </form>
