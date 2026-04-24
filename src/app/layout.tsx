@@ -4,7 +4,14 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "TaskFlow",
-  description: "Real-time collaborative task board"
+  description: "Real-time collaborative task board",
+  icons: {
+    icon: [
+      { url: "/icon.svg", type: "image/svg+xml" },
+      { url: "/icon.png", type: "image/png", sizes: "1254x1254" }
+    ],
+    apple: [{ url: "/icon.png", sizes: "1254x1254" }]
+  }
 };
 
 type RootLayoutProps = {
