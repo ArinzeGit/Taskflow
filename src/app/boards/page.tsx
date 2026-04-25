@@ -311,17 +311,6 @@ export default function BoardsPage() {
     };
   }, [selectedBoardId, retryLoadTasks]);
 
-  async function handleLogout() {
-    const supabase = getSupabaseClient();
-    if (channelRef.current) {
-      await supabase.removeChannel(channelRef.current);
-      channelRef.current = null;
-    }
-    await supabase.auth.signOut();
-    router.replace("/login");
-    router.refresh();
-  }
-
   async function handleCreateBoard(payload: { name: string }) {
     setIsCreatingBoard(true);
 
@@ -631,19 +620,7 @@ export default function BoardsPage() {
 
   return (
     <div className="min-h-screen bg-slate-100">
-      <Header
-        actions={
-          <button
-            className="rounded bg-blue-500 px-3 py-2 text-sm text-white transition-colors hover:bg-blue-400 active:bg-blue-600"
-            onClick={handleLogout}
-            type="button"
-          >
-            Logout
-          </button>
-        }
-        subtitle="Collaborate on tasks with your team."
-        title="Boards"
-      />
+      <Header subtitle="Collaborate on tasks with your team." title="Boards" />
 
       <div className="flex flex-col md:flex-row">
         <Sidebar
