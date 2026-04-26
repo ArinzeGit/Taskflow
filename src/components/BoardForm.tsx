@@ -31,7 +31,7 @@ export function BoardForm({ onSubmit, isSubmitting = false, disabled = false }: 
           disabled={disabled}
           id="board-name"
           name="name"
-          placeholder="Product Roadmap"
+          placeholder="Enter board name"
           required
           type="text"
         />

@@ -33,7 +33,7 @@ export function TaskForm({ onSubmit, submitLabel = "Save Task", isSubmitting = f
           disabled={disabled}
           id="task-title"
           name="title"
-          placeholder="Write docs"
+          placeholder="Enter task title"
           required
           type="text"
         />
@@ -47,7 +47,7 @@ export function TaskForm({ onSubmit, submitLabel = "Save Task", isSubmitting = f
           disabled={disabled}
           id="task-description"
           name="description"
-          placeholder="Add acceptance criteria..."
+          placeholder="Describe the task"
           rows={3}
         />
       </div>
