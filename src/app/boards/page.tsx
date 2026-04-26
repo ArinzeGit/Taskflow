@@ -82,6 +82,7 @@ export default function BoardsPage() {
   );
   const [isDeletingTask, setIsDeletingTask] = useState(false);
   const [isLoadingTasks, setIsLoadingTasks] = useState(false);
+  const [isTaskComposerOpen, setIsTaskComposerOpen] = useState(false);
   const channelRef = useRef<RealtimeChannel | null>(null);
 
   useEffect(() => {
@@ -158,12 +159,14 @@ export default function BoardsPage() {
       setIsLoadingTasks(false);
       setTasks([]);
       setTasksLoadError(null);
+      setIsTaskComposerOpen(false);
       return;
     }
 
     setTasksLoadError(null);
     setIsLoadingTasks(true);
     setTasks([]);
+    setIsTaskComposerOpen(false);
   }, [selectedBoardId]);
 
   const retryLoadTasks = useCallback(async () => {
@@ -372,6 +375,7 @@ export default function BoardsPage() {
       }
 
       setTasks((prev) => [...prev, mapTask(data as TaskRow)]);
+      setIsTaskComposerOpen(false);
       toast.success("Task created");
     } catch (error) {
       toast.error(getActionErrorMessage(error, "Failed to create task."));
@@ -658,6 +662,37 @@ export default function BoardsPage() {
           {!isLoadingData && boards.length > 0 ? (
             <>
               <section>
+                <div className="mb-4">
+                  {isTaskComposerOpen ? (
+                    <div className="space-y-2">
+                      <TaskForm
+                        disabled={!selectedBoardId || isLoadingTasks}
+                        isSubmitting={isCreatingTask}
+                        onSubmit={handleCreateTask}
+                        submitLabel={isCreatingTask ? "Saving..." : "Save Task"}
+                      />
+                      <div className="flex justify-end">
+                        <button
+                          className="rounded border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
+                          onClick={() => setIsTaskComposerOpen(false)}
+                          type="button"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <button
+                      className="w-full rounded border border-slate-300 bg-white px-4 py-2.5 text-left text-sm text-slate-500 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-900 disabled:cursor-not-allowed disabled:opacity-60"
+                      disabled={!selectedBoardId || isLoadingTasks}
+                      onClick={() => setIsTaskComposerOpen(true)}
+                      type="button"
+                    >
+                      + Add a task...
+                    </button>
+                  )}
+                </div>
+
                 <div className="mb-3 flex items-center gap-2">
                   <h2 className="text-lg font-semibold">Tasks</h2>
                   {isLoadingTasks ? (
@@ -697,16 +732,6 @@ export default function BoardsPage() {
                     ))}
                   </div>
                 )}
-              </section>
-
-              <section>
-                <h2 className="mb-3 text-lg font-semibold">Add Task</h2>
-                <TaskForm
-                  disabled={!selectedBoardId || isLoadingTasks}
-                  isSubmitting={isCreatingTask}
-                  onSubmit={handleCreateTask}
-                  submitLabel={isCreatingTask ? "Saving..." : "Save Task"}
-                />
               </section>
             </>
           ) : null}
