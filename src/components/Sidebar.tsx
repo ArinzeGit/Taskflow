@@ -81,14 +81,16 @@ export function Sidebar({
 
   return (
     <aside className="w-full space-y-4 border-r border-slate-300 bg-slate-50 p-4 md:w-80">
-      <div>
-        <h2 className="text-lg font-semibold">Boards</h2>
-        <p className="text-sm text-slate-600">Create or select a board</p>
-      </div>
+      <section>
+        <h2 className="mb-3 text-lg font-semibold">Create Board</h2>
+        <BoardForm disabled={isLoadingBoards} isSubmitting={isCreatingBoard} onSubmit={onCreateBoard} />
+      </section>
 
-      <BoardForm disabled={isLoadingBoards} isSubmitting={isCreatingBoard} onSubmit={onCreateBoard} />
-
-      {renderBoardList()}
+      <section>
+        <h2 className="mb-2 text-lg font-semibold">Boards</h2>
+        <p className="mb-3 text-sm text-slate-600">Select a board to view and manage tasks.</p>
+        {renderBoardList()}
+      </section>
     </aside>
   );
 }

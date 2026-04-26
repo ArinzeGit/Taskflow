@@ -658,16 +658,6 @@ export default function BoardsPage() {
           {!isLoadingData && boards.length > 0 ? (
             <>
               <section>
-                <h2 className="mb-3 text-lg font-semibold">Add Task</h2>
-                <TaskForm
-                  disabled={!selectedBoardId || isLoadingTasks}
-                  isSubmitting={isCreatingTask}
-                  onSubmit={handleCreateTask}
-                  submitLabel={isCreatingTask ? "Saving..." : "Save Task"}
-                />
-              </section>
-
-              <section>
                 <div className="mb-3 flex items-center gap-2">
                   <h2 className="text-lg font-semibold">Tasks</h2>
                   {isLoadingTasks ? (
@@ -707,6 +697,16 @@ export default function BoardsPage() {
                     ))}
                   </div>
                 )}
+              </section>
+
+              <section>
+                <h2 className="mb-3 text-lg font-semibold">Add Task</h2>
+                <TaskForm
+                  disabled={!selectedBoardId || isLoadingTasks}
+                  isSubmitting={isCreatingTask}
+                  onSubmit={handleCreateTask}
+                  submitLabel={isCreatingTask ? "Saving..." : "Save Task"}
+                />
               </section>
             </>
           ) : null}

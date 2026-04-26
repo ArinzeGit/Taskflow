@@ -27,7 +27,6 @@ export function BoardCard({
         type="button"
       >
         <p className="font-medium">{board.name}</p>
-        <p className="text-xs text-slate-500">Board ID: {board.id}</p>
       </button>
       <div className="flex gap-2 border-t border-slate-200 bg-slate-50/80 px-2 py-1.5">
         <button
