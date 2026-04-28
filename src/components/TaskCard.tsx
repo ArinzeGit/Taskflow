@@ -20,7 +20,7 @@ export function TaskCard({ task, onEdit, onDelete }: TaskCardProps) {
   };
 
   return (
-    <article className="group rounded-md border border-slate-300 bg-white p-3.5 shadow-sm">
+    <article className="group rounded-md border border-slate-200 bg-slate-50 p-3.5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-white hover:shadow-md">
       <div className="mb-3 flex items-start justify-between gap-3">
         <h3 className="text-base font-semibold leading-snug text-slate-900">{task.title}</h3>
         <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-medium ${statusClassMap[task.status]}`}>

@@ -105,8 +105,16 @@ export function TopNav() {
                 onClick={() => setIsAvatarMenuOpen((prev) => !prev)}
                 type="button"
               >
-                <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-blue-100 text-xs font-semibold text-blue-900">
-                  TF
+                <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-blue-100 text-blue-900">
+                  <svg aria-hidden="true" className="h-4 w-4" fill="none" viewBox="0 0 24 24">
+                    <circle cx="12" cy="8" r="3.25" stroke="currentColor" strokeWidth="1.8" />
+                    <path
+                      d="M5.5 18.5c.8-3 3.6-5 6.5-5s5.7 2 6.5 5"
+                      stroke="currentColor"
+                      strokeLinecap="round"
+                      strokeWidth="1.8"
+                    />
+                  </svg>
                 </span>
                 <span aria-hidden>▼</span>
                 <span className="sr-only">Open account menu</span>

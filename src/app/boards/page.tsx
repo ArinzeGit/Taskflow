@@ -666,6 +666,45 @@ export default function BoardsPage() {
               <h2 className="text-xl font-semibold text-blue-900">{selectedBoard?.name ?? "Select a board"}</h2>
 
               <section>
+                <div className="mb-4">
+                  <button
+                    className={`w-full rounded border px-4 py-2.5 text-left text-sm transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-60 ${
+                      isTaskComposerOpen
+                        ? "pointer-events-none border-transparent bg-transparent p-0 opacity-0"
+                        : "border-slate-300 bg-white text-slate-500 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-900"
+                    }`}
+                    disabled={!selectedBoardId || isLoadingTasks}
+                    onClick={() => setIsTaskComposerOpen(true)}
+                    type="button"
+                  >
+                    + Add a task...
+                  </button>
+
+                  <div
+                    className={`overflow-hidden transition-all duration-250 ease-out ${
+                      isTaskComposerOpen ? "mt-2 max-h-80 opacity-100" : "max-h-0 opacity-0"
+                    }`}
+                  >
+                    <div className="space-y-2">
+                      <TaskForm
+                        disabled={!selectedBoardId || isLoadingTasks || !isTaskComposerOpen}
+                        isSubmitting={isCreatingTask}
+                        onSubmit={handleCreateTask}
+                        submitLabel={isCreatingTask ? "Saving..." : "Save Task"}
+                      />
+                      <div className="flex justify-end">
+                        <button
+                          className="rounded border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
+                          onClick={() => setIsTaskComposerOpen(false)}
+                          type="button"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
                 <div className="mb-3 flex items-center gap-2">
                   <h2 className="text-lg font-semibold">Tasks</h2>
                   {isLoadingTasks ? (
@@ -706,36 +745,6 @@ export default function BoardsPage() {
                   </div>
                 )}
 
-                <div className="mt-4">
-                  {isTaskComposerOpen ? (
-                    <div className="space-y-2">
-                      <TaskForm
-                        disabled={!selectedBoardId || isLoadingTasks}
-                        isSubmitting={isCreatingTask}
-                        onSubmit={handleCreateTask}
-                        submitLabel={isCreatingTask ? "Saving..." : "Save Task"}
-                      />
-                      <div className="flex justify-end">
-                        <button
-                          className="rounded border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
-                          onClick={() => setIsTaskComposerOpen(false)}
-                          type="button"
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <button
-                      className="w-full rounded border border-slate-300 bg-white px-4 py-2.5 text-left text-sm text-slate-500 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-900 disabled:cursor-not-allowed disabled:opacity-60"
-                      disabled={!selectedBoardId || isLoadingTasks}
-                      onClick={() => setIsTaskComposerOpen(true)}
-                      type="button"
-                    >
-                      + Add a task...
-                    </button>
-                  )}
-                </div>
               </section>
             </>
           ) : null}
