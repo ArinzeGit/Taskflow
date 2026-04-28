@@ -1,4 +1,5 @@
 import { Board } from "@/types";
+import { useEffect, useRef, useState } from "react";
 
 type BoardCardProps = {
   board: Board;
@@ -15,40 +16,93 @@ export function BoardCard({
   onRename,
   onDelete
 }: BoardCardProps) {
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (!menuRef.current) {
+        return;
+      }
+      if (!menuRef.current.contains(event.target as Node)) {
+        setIsMenuOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  useEffect(() => {
+    setIsMenuOpen(false);
+  }, [board.id]);
+
   return (
     <div
-      className={`overflow-hidden rounded-md border transition ${
-        isSelected ? "border-blue-600 bg-blue-100" : "border-slate-300 bg-white"
+      className={`group relative flex items-center gap-2 rounded-md border px-2 py-1.5 transition ${
+        isSelected
+          ? "border-blue-300 bg-blue-100 ring-1 ring-blue-200"
+          : "border-slate-200 bg-slate-50/70 hover:border-slate-300 hover:bg-white"
       }`}
     >
+      <span className={`h-7 w-1 rounded-full ${isSelected ? "bg-blue-500" : "bg-transparent"}`} />
       <button
-        className="w-full px-3 py-2 text-left hover:bg-blue-50"
+        className="min-w-0 flex-1 rounded px-2 py-1.5 text-left"
         onClick={() => onSelect?.(board.id)}
         type="button"
       >
-        <p className="font-medium">{board.name}</p>
+        <p className={`truncate text-sm font-medium ${isSelected ? "text-blue-900" : "text-slate-800"}`}>
+          {board.name}
+        </p>
       </button>
-      <div className="flex gap-2 border-t border-slate-200 bg-slate-50/80 px-2 py-1.5">
+      <div className="relative" ref={menuRef}>
         <button
-          className="rounded px-2 py-1 text-xs text-blue-900 hover:bg-blue-100"
+          aria-expanded={isMenuOpen}
+          aria-haspopup="menu"
+          className={`rounded p-1.5 text-slate-500 transition hover:bg-slate-100 hover:text-slate-700 ${
+            isMenuOpen ? "opacity-100" : "opacity-0 group-hover:opacity-100 group-focus-within:opacity-100"
+          }`}
           onClick={(e) => {
             e.stopPropagation();
-            onRename?.(board.id);
+            setIsMenuOpen((prev) => !prev);
           }}
           type="button"
         >
-          Rename
+          <span aria-hidden>...</span>
+          <span className="sr-only">Open board actions</span>
         </button>
-        <button
-          className="rounded px-2 py-1 text-xs text-rose-700 hover:bg-rose-100"
-          onClick={(e) => {
-            e.stopPropagation();
-            onDelete?.(board.id);
-          }}
-          type="button"
-        >
-          Delete
-        </button>
+
+        {isMenuOpen ? (
+          <div
+            className="absolute right-0 top-9 z-20 w-32 rounded-md border border-slate-200 bg-white p-1 shadow-md"
+            role="menu"
+          >
+            <button
+              className="w-full rounded px-2 py-1.5 text-left text-xs text-blue-900 hover:bg-blue-100"
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsMenuOpen(false);
+                onRename?.(board.id);
+              }}
+              role="menuitem"
+              type="button"
+            >
+              Rename
+            </button>
+            <button
+              className="w-full rounded px-2 py-1.5 text-left text-xs text-rose-700 hover:bg-rose-100"
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsMenuOpen(false);
+                onDelete?.(board.id);
+              }}
+              role="menuitem"
+              type="button"
+            >
+              Delete
+            </button>
+          </div>
+        ) : null}
       </div>
     </div>
   );
