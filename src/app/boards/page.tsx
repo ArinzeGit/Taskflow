@@ -640,7 +640,7 @@ export default function BoardsPage() {
           selectedBoardId={selectedBoardId ?? undefined}
         />
 
-        <main className="flex-1 space-y-6 p-6">
+        <main className="flex-1 space-y-6 bg-white/80 p-6 md:bg-white">
           {isLoadingData ? (
             <div
               aria-busy="true"
@@ -662,7 +662,47 @@ export default function BoardsPage() {
           {!isLoadingData && boards.length > 0 ? (
             <>
               <section>
-                <div className="mb-4">
+                <div className="mb-3 flex items-center gap-2">
+                  <h2 className="text-lg font-semibold">Tasks</h2>
+                  {isLoadingTasks ? (
+                    <span className="inline-flex items-center gap-1.5 text-xs text-slate-500">
+                      <Spinner label="Loading tasks" />
+                      Loading…
+                    </span>
+                  ) : null}
+                </div>
+                {tasksLoadError && !isLoadingTasks ? (
+                  <div className="rounded border border-dashed border-blue-200 bg-blue-50 px-4 py-6 text-center text-sm text-blue-900">
+                    <p className="mb-3">Tasks couldn’t be loaded.</p>
+                    <button
+                      className="rounded border border-blue-300 bg-white px-3 py-1.5 text-sm font-medium text-blue-900 hover:bg-blue-100 active:bg-blue-200"
+                      onClick={() => void retryLoadTasks()}
+                      type="button"
+                    >
+                      Try again
+                    </button>
+                  </div>
+                ) : isLoadingTasks ? (
+                  <TaskListSkeleton />
+                ) : tasks.length === 0 ? (
+                  <EmptyState
+                    description="Add a task below to track work on this board. You can edit details, change status, and remove tasks anytime."
+                    title="No tasks on this board"
+                  />
+                ) : (
+                  <div className="grid gap-3">
+                    {tasks.map((task) => (
+                      <TaskCard
+                        key={task.id}
+                        onDelete={handleRequestDeleteTask}
+                        onEdit={setEditingTask}
+                        task={task}
+                      />
+                    ))}
+                  </div>
+                )}
+
+                <div className="mt-4">
                   {isTaskComposerOpen ? (
                     <div className="space-y-2">
                       <TaskForm
@@ -692,46 +732,6 @@ export default function BoardsPage() {
                     </button>
                   )}
                 </div>
-
-                <div className="mb-3 flex items-center gap-2">
-                  <h2 className="text-lg font-semibold">Tasks</h2>
-                  {isLoadingTasks ? (
-                    <span className="inline-flex items-center gap-1.5 text-xs text-slate-500">
-                      <Spinner label="Loading tasks" />
-                      Loading…
-                    </span>
-                  ) : null}
-                </div>
-                {tasksLoadError && !isLoadingTasks ? (
-                  <div className="rounded border border-dashed border-blue-200 bg-blue-50 px-4 py-6 text-center text-sm text-blue-900">
-                    <p className="mb-3">Tasks couldn’t be loaded.</p>
-                    <button
-                      className="rounded border border-blue-300 bg-white px-3 py-1.5 text-sm font-medium text-blue-900 hover:bg-blue-100 active:bg-blue-200"
-                      onClick={() => void retryLoadTasks()}
-                      type="button"
-                    >
-                      Try again
-                    </button>
-                  </div>
-                ) : isLoadingTasks ? (
-                  <TaskListSkeleton />
-                ) : tasks.length === 0 ? (
-                  <EmptyState
-                    description="Add a task above to track work on this board. You can edit details, change status, and remove tasks anytime."
-                    title="No tasks on this board"
-                  />
-                ) : (
-                  <div className="grid gap-3">
-                    {tasks.map((task) => (
-                      <TaskCard
-                        key={task.id}
-                        onDelete={handleRequestDeleteTask}
-                        onEdit={setEditingTask}
-                        task={task}
-                      />
-                    ))}
-                  </div>
-                )}
               </section>
             </>
           ) : null}

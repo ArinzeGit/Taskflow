@@ -90,7 +90,13 @@ export function Sidebar({
   }
 
   return (
-    <aside className="w-full space-y-4 border-r border-slate-300 bg-slate-50 p-4 md:w-80">
+    <aside className="w-full space-y-4 border-r border-slate-300 bg-slate-100/90 p-4 md:w-80 md:shadow-[inset_-1px_0_0_0_rgba(148,163,184,0.25)]">
+      <section>
+        <h2 className="mb-2 text-lg font-semibold">Boards</h2>
+        <p className="mb-3 text-sm text-slate-600">Select a board to view and manage tasks.</p>
+        {renderBoardList()}
+      </section>
+
       <section>
         {isBoardComposerOpen ? (
           <div className="space-y-2">
@@ -115,12 +121,6 @@ export function Sidebar({
             + Create a board...
           </button>
         )}
-      </section>
-
-      <section>
-        <h2 className="mb-2 text-lg font-semibold">Boards</h2>
-        <p className="mb-3 text-sm text-slate-600">Select a board to view and manage tasks.</p>
-        {renderBoardList()}
       </section>
     </aside>
   );
