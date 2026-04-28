@@ -39,15 +39,15 @@ export function BoardCard({
 
   return (
     <div
-      className={`group relative flex items-center gap-2 rounded-md border px-2 py-1.5 transition ${
+      className={`group relative flex items-center gap-1.5 rounded-md border px-2 py-1 transition ${
         isSelected
           ? "border-blue-300 bg-blue-100 ring-1 ring-blue-200"
-          : "border-slate-200 bg-slate-50/70 hover:border-slate-300 hover:bg-white"
+          : "border-slate-200 bg-slate-50/80 hover:border-slate-400 hover:bg-slate-100"
       }`}
     >
-      <span className={`h-7 w-1 rounded-full ${isSelected ? "bg-blue-500" : "bg-transparent"}`} />
+      <span className={`h-6 w-1 rounded-full ${isSelected ? "bg-blue-500" : "bg-transparent"}`} />
       <button
-        className="min-w-0 flex-1 rounded px-2 py-1.5 text-left"
+        className="min-w-0 flex-1 rounded px-2 py-1 text-left"
         onClick={() => onSelect?.(board.id)}
         type="button"
       >
@@ -59,7 +59,7 @@ export function BoardCard({
         <button
           aria-expanded={isMenuOpen}
           aria-haspopup="menu"
-          className={`rounded p-1.5 text-slate-500 transition hover:bg-slate-100 hover:text-slate-700 ${
+          className={`rounded p-1 text-slate-500 transition hover:bg-slate-200 hover:text-slate-800 ${
             isMenuOpen ? "opacity-100" : "opacity-0 group-hover:opacity-100 group-focus-within:opacity-100"
           }`}
           onClick={(e) => {

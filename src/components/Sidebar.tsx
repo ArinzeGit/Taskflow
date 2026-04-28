@@ -74,7 +74,7 @@ export function Sidebar({
       );
     }
     return (
-      <div className="space-y-2">
+      <div className="space-y-1">
         {boards.map((board) => (
           <BoardCard
             board={board}
@@ -99,7 +99,7 @@ export function Sidebar({
 
       <section>
         {isBoardComposerOpen ? (
-          <div className="space-y-2">
+          <div className="space-y-1">
             <BoardForm disabled={isLoadingBoards} isSubmitting={isCreatingBoard} onSubmit={onCreateBoard} />
             <div className="flex justify-end">
               <button

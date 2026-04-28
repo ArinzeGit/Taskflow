@@ -20,14 +20,14 @@ export function TaskCard({ task, onEdit, onDelete }: TaskCardProps) {
   };
 
   return (
-    <article className="group rounded-md border border-slate-300 bg-white p-4 shadow-sm">
+    <article className="group rounded-md border border-slate-300 bg-white p-3.5 shadow-sm">
       <div className="mb-3 flex items-start justify-between gap-3">
         <h3 className="text-base font-semibold leading-snug text-slate-900">{task.title}</h3>
         <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-medium ${statusClassMap[task.status]}`}>
           {statusLabelMap[task.status]}
         </span>
       </div>
-      <p className="mb-4 text-sm leading-relaxed text-slate-600">
+      <p className="mb-3 text-sm leading-relaxed text-slate-600">
         {task.description?.trim() ? task.description : "No description yet."}
       </p>
       <div className="flex justify-end gap-2 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">

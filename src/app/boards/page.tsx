@@ -622,6 +622,8 @@ export default function BoardsPage() {
     );
   }
 
+  const selectedBoard = boards.find((board) => board.id === selectedBoardId) ?? null;
+
   return (
     <div className="min-h-screen bg-slate-100">
       <Header subtitle="Collaborate on tasks with your team." title="Boards" />
@@ -661,6 +663,8 @@ export default function BoardsPage() {
 
           {!isLoadingData && boards.length > 0 ? (
             <>
+              <h2 className="text-xl font-semibold text-blue-900">{selectedBoard?.name ?? "Select a board"}</h2>
+
               <section>
                 <div className="mb-3 flex items-center gap-2">
                   <h2 className="text-lg font-semibold">Tasks</h2>
@@ -690,7 +694,7 @@ export default function BoardsPage() {
                     title="No tasks on this board"
                   />
                 ) : (
-                  <div className="grid gap-3">
+                  <div className="grid max-w-3xl gap-3">
                     {tasks.map((task) => (
                       <TaskCard
                         key={task.id}
