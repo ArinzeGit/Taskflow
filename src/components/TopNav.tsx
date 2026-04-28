@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { getSupabaseClient } from "@/lib/supabase";
 
 export function TopNav() {
@@ -11,6 +11,8 @@ export function TopNav() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [isCheckingSession, setIsCheckingSession] = useState(true);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [isAvatarMenuOpen, setIsAvatarMenuOpen] = useState(false);
+  const avatarMenuRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     const supabase = getSupabaseClient();
@@ -45,6 +47,20 @@ export function TopNav() {
     };
   }, []);
 
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (!avatarMenuRef.current) {
+        return;
+      }
+      if (!avatarMenuRef.current.contains(event.target as Node)) {
+        setIsAvatarMenuOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   async function handleLogout() {
     if (isLoggingOut) {
       return;
@@ -55,6 +71,7 @@ export function TopNav() {
       const supabase = getSupabaseClient();
       await supabase.auth.signOut();
       setIsAuthenticated(false);
+      setIsAvatarMenuOpen(false);
       router.push("/login");
       router.refresh();
     } finally {
@@ -80,14 +97,38 @@ export function TopNav() {
             >
               Boards
             </Link>
-            <button
-              className="rounded-md bg-blue-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-400 active:bg-blue-600 disabled:opacity-60"
-              disabled={isLoggingOut}
-              onClick={() => void handleLogout()}
-              type="button"
-            >
-              {isLoggingOut ? "Logging out..." : "Logout"}
-            </button>
+            <div className="relative" ref={avatarMenuRef}>
+              <button
+                aria-expanded={isAvatarMenuOpen}
+                aria-haspopup="menu"
+                className="inline-flex items-center gap-2 rounded-md border border-blue-300 bg-white px-2.5 py-1.5 text-sm font-medium text-blue-900 transition-colors hover:bg-blue-100"
+                onClick={() => setIsAvatarMenuOpen((prev) => !prev)}
+                type="button"
+              >
+                <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-blue-100 text-xs font-semibold text-blue-900">
+                  TF
+                </span>
+                <span aria-hidden>▼</span>
+                <span className="sr-only">Open account menu</span>
+              </button>
+
+              {isAvatarMenuOpen ? (
+                <div
+                  className="absolute right-0 top-11 z-50 min-w-36 rounded-md border border-slate-200 bg-white p-1 shadow-md"
+                  role="menu"
+                >
+                  <button
+                    className="w-full rounded px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+                    disabled={isLoggingOut}
+                    onClick={() => void handleLogout()}
+                    role="menuitem"
+                    type="button"
+                  >
+                    {isLoggingOut ? "Logging out..." : "Logout"}
+                  </button>
+                </div>
+              ) : null}
+            </div>
           </div>
         ) : (
           <div className="flex items-center gap-2">

@@ -14,9 +14,9 @@ export function TaskCard({ task, onEdit, onDelete }: TaskCardProps) {
   };
 
   const statusClassMap: Record<Task["status"], string> = {
-    todo: "bg-blue-100 text-blue-900 border border-blue-200",
-    in_progress: "bg-amber-100 text-amber-900 border border-amber-200",
-    done: "bg-emerald-100 text-emerald-900 border border-emerald-200"
+    todo: "bg-blue-50 text-blue-800 border border-blue-100",
+    in_progress: "bg-amber-50 text-amber-800 border border-amber-100",
+    done: "bg-emerald-50 text-emerald-800 border border-emerald-100"
   };
 
   return (
@@ -32,18 +32,27 @@ export function TaskCard({ task, onEdit, onDelete }: TaskCardProps) {
       </p>
       <div className="flex justify-end gap-2 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
         <button
-          className="rounded bg-blue-500 px-3 py-1 text-sm text-white transition-colors hover:bg-blue-400 active:bg-blue-600"
+          className="rounded px-2 py-1 text-sm font-medium text-blue-800 transition-colors hover:bg-blue-50 hover:text-blue-900"
           onClick={() => onEdit?.(task)}
           type="button"
         >
           Edit
         </button>
         <button
-          className="rounded bg-rose-600 px-3 py-1 text-sm text-white"
+          aria-label={`Delete task ${task.title}`}
+          className="rounded p-1.5 text-rose-700 transition-colors hover:bg-rose-50 hover:text-rose-800"
           onClick={() => onDelete?.(task.id)}
           type="button"
         >
-          Delete
+          <svg aria-hidden="true" className="h-4 w-4" fill="none" viewBox="0 0 24 24">
+            <path
+              d="M4 7h16M10 11v6m4-6v6M6 7l1 12h10l1-12M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"
+              stroke="currentColor"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="1.8"
+            />
+          </svg>
         </button>
       </div>
     </article>
