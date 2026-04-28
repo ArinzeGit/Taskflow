@@ -1,6 +1,7 @@
 "use client";
 
 import { Board } from "@/types";
+import { useEffect, useRef, useState } from "react";
 import { BoardCard } from "./BoardCard";
 import { BoardForm } from "./BoardForm";
 import { BoardListSkeleton } from "./BoardListSkeleton";
@@ -32,7 +33,16 @@ export function Sidebar({
   isLoadingBoards = false,
   boardsLoadError = null
 }: SidebarProps) {
+  const [isBoardComposerOpen, setIsBoardComposerOpen] = useState(false);
+  const previousBoardCountRef = useRef(boards.length);
   const showBoardsEmpty = !isLoadingBoards && boards.length === 0 && !boardsLoadError;
+
+  useEffect(() => {
+    if (boards.length > previousBoardCountRef.current) {
+      setIsBoardComposerOpen(false);
+    }
+    previousBoardCountRef.current = boards.length;
+  }, [boards.length]);
 
   function renderBoardList() {
     if (boardsLoadError) {
@@ -82,8 +92,29 @@ export function Sidebar({
   return (
     <aside className="w-full space-y-4 border-r border-slate-300 bg-slate-50 p-4 md:w-80">
       <section>
-        <h2 className="mb-3 text-lg font-semibold">Create Board</h2>
-        <BoardForm disabled={isLoadingBoards} isSubmitting={isCreatingBoard} onSubmit={onCreateBoard} />
+        {isBoardComposerOpen ? (
+          <div className="space-y-2">
+            <BoardForm disabled={isLoadingBoards} isSubmitting={isCreatingBoard} onSubmit={onCreateBoard} />
+            <div className="flex justify-end">
+              <button
+                className="rounded border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
+                onClick={() => setIsBoardComposerOpen(false)}
+                type="button"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        ) : (
+          <button
+            className="w-full rounded border border-slate-300 bg-white px-4 py-2.5 text-left text-sm text-slate-500 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-900 disabled:cursor-not-allowed disabled:opacity-60"
+            disabled={isLoadingBoards}
+            onClick={() => setIsBoardComposerOpen(true)}
+            type="button"
+          >
+            + Create a board...
+          </button>
+        )}
       </section>
 
       <section>
