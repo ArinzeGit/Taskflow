@@ -626,10 +626,10 @@ export default function BoardsPage() {
   const selectedBoard = boards.find((board) => board.id === selectedBoardId) ?? null;
 
   return (
-    <div className="min-h-screen bg-slate-100">
+    <div className="flex min-h-screen flex-col bg-slate-100">
       <Header subtitle="Collaborate on tasks with your team." title="Boards" />
 
-      <div className="flex flex-col md:flex-row">
+      <div className="flex min-h-0 flex-1 flex-col md:flex-row">
         <Sidebar
           boards={boards}
           boardsLoadError={boardsLoadError}
@@ -643,7 +643,7 @@ export default function BoardsPage() {
           selectedBoardId={selectedBoardId ?? undefined}
         />
 
-        <main className="flex-1 space-y-6 bg-white/80 p-6 md:bg-white">
+        <main className="flex min-h-0 w-full min-w-0 flex-1 flex-col space-y-6 bg-white p-6">
           {isLoadingData ? <TasksMainSkeleton /> : null}
 
           {!isLoadingData && boards.length === 0 && !boardsLoadError ? (
@@ -701,23 +701,27 @@ export default function BoardsPage() {
                   <h2 className="text-lg font-semibold">Tasks</h2>
                 </div>
                 {tasksLoadError && !isLoadingTasks ? (
-                  <div className="rounded border border-dashed border-blue-200 bg-blue-50 px-4 py-6 text-center text-sm text-blue-900">
-                    <p className="mb-3">Tasks couldn’t be loaded.</p>
-                    <button
-                      className="rounded border border-blue-300 bg-white px-3 py-1.5 text-sm font-medium text-blue-900 hover:bg-blue-100 active:bg-blue-200"
-                      onClick={() => void retryLoadTasks()}
-                      type="button"
-                    >
-                      Try again
-                    </button>
+                  <div className="max-w-3xl">
+                    <div className="rounded border border-dashed border-blue-200 bg-blue-50 px-4 py-6 text-center text-sm text-blue-900">
+                      <p className="mb-3">Tasks couldn’t be loaded.</p>
+                      <button
+                        className="rounded border border-blue-300 bg-white px-3 py-1.5 text-sm font-medium text-blue-900 hover:bg-blue-100 active:bg-blue-200"
+                        onClick={() => void retryLoadTasks()}
+                        type="button"
+                      >
+                        Try again
+                      </button>
+                    </div>
                   </div>
                 ) : isLoadingTasks ? (
                   <TaskListSkeleton />
                 ) : tasks.length === 0 ? (
-                  <EmptyState
-                    description="Add a task below to track work on this board. You can edit details, change status, and remove tasks anytime."
-                    title="No tasks on this board"
-                  />
+                  <div className="max-w-3xl">
+                    <EmptyState
+                      description="Add a task below to track work on this board. You can edit details, change status, and remove tasks anytime."
+                      title="No tasks on this board"
+                    />
+                  </div>
                 ) : (
                   <div className="grid max-w-3xl gap-3">
                     {tasks.map((task) => (
