@@ -10,6 +10,7 @@ import { TaskEditModal } from "@/components/TaskEditModal";
 import { Spinner } from "@/components/Spinner";
 import { TaskForm } from "@/components/TaskForm";
 import { TaskListSkeleton } from "@/components/TaskListSkeleton";
+import { TasksMainSkeleton } from "@/components/TasksMainSkeleton";
 import { getActionErrorMessage, getErrorMessage } from "@/lib/errors";
 import { getSupabaseClient } from "@/lib/supabase";
 import { Board, Task } from "@/types";
@@ -643,16 +644,7 @@ export default function BoardsPage() {
         />
 
         <main className="flex-1 space-y-6 bg-white/80 p-6 md:bg-white">
-          {isLoadingData ? (
-            <div
-              aria-busy="true"
-              aria-label="Loading boards"
-              className="flex min-h-[12rem] flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-slate-300 bg-white/60 px-6 py-12 text-center"
-            >
-              <Spinner label="Loading boards" size="md" />
-              <p className="text-sm text-slate-600">Loading your boards…</p>
-            </div>
-          ) : null}
+          {isLoadingData ? <TasksMainSkeleton /> : null}
 
           {!isLoadingData && boards.length === 0 && !boardsLoadError ? (
             <EmptyState
@@ -707,12 +699,6 @@ export default function BoardsPage() {
 
                 <div className="mb-3 flex items-center gap-2">
                   <h2 className="text-lg font-semibold">Tasks</h2>
-                  {isLoadingTasks ? (
-                    <span className="inline-flex items-center gap-1.5 text-xs text-slate-500">
-                      <Spinner label="Loading tasks" />
-                      Loading…
-                    </span>
-                  ) : null}
                 </div>
                 {tasksLoadError && !isLoadingTasks ? (
                   <div className="rounded border border-dashed border-blue-200 bg-blue-50 px-4 py-6 text-center text-sm text-blue-900">
