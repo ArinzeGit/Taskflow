@@ -659,27 +659,19 @@ export default function BoardsPage() {
 
               <section>
                 <div className="mb-4">
-                  <button
-                    className={`w-full rounded border px-4 py-2.5 text-left text-sm transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-60 ${
-                      isTaskComposerOpen
-                        ? "pointer-events-none border-transparent bg-transparent p-0 opacity-0"
-                        : "border-slate-300 bg-white text-slate-500 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-900"
-                    }`}
-                    disabled={!selectedBoardId || isLoadingTasks}
-                    onClick={() => setIsTaskComposerOpen(true)}
-                    type="button"
-                  >
-                    + Add a task...
-                  </button>
-
-                  <div
-                    className={`overflow-hidden transition-all duration-250 ease-out ${
-                      isTaskComposerOpen ? "mt-2 max-h-80 opacity-100" : "max-h-0 opacity-0"
-                    }`}
-                  >
+                  {!isTaskComposerOpen ? (
+                    <button
+                      className="w-full rounded border border-slate-300 bg-white px-4 py-2.5 text-left text-sm text-slate-500 transition-colors duration-200 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-900 disabled:cursor-not-allowed disabled:opacity-60"
+                      disabled={!selectedBoardId || isLoadingTasks}
+                      onClick={() => setIsTaskComposerOpen(true)}
+                      type="button"
+                    >
+                      + Add a task...
+                    </button>
+                  ) : (
                     <div className="space-y-2">
                       <TaskForm
-                        disabled={!selectedBoardId || isLoadingTasks || !isTaskComposerOpen}
+                        disabled={!selectedBoardId || isLoadingTasks}
                         isSubmitting={isCreatingTask}
                         onSubmit={handleCreateTask}
                         submitLabel={isCreatingTask ? "Saving..." : "Save Task"}
@@ -694,7 +686,7 @@ export default function BoardsPage() {
                         </button>
                       </div>
                     </div>
-                  </div>
+                  )}
                 </div>
 
                 <div className="mb-3 flex items-center gap-2">

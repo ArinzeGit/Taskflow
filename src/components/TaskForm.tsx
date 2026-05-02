@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent } from "react";
+import { FormEvent, useEffect, useRef } from "react";
 
 type TaskFormProps = {
   onSubmit?: (payload: { title: string; description: string }) => Promise<void> | void;
@@ -10,6 +10,14 @@ type TaskFormProps = {
 };
 
 export function TaskForm({ onSubmit, submitLabel = "Save Task", isSubmitting = false, disabled = false }: TaskFormProps) {
+  const titleInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!disabled) {
+      titleInputRef.current?.focus();
+    }
+  }, [disabled]);
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
@@ -29,6 +37,7 @@ export function TaskForm({ onSubmit, submitLabel = "Save Task", isSubmitting = f
           Task title
         </label>
         <input
+          ref={titleInputRef}
           className="w-full rounded border border-slate-300 px-3 py-2"
           disabled={disabled}
           id="task-title"

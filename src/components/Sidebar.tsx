@@ -98,26 +98,22 @@ export function Sidebar({
       </section>
 
       <section>
-        <button
-          className={`w-full rounded border px-4 py-2.5 text-left text-sm transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-60 ${
-            isBoardComposerOpen
-              ? "pointer-events-none border-transparent bg-transparent p-0 opacity-0"
-              : "border-slate-300 bg-white text-slate-500 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-900"
-          }`}
-          disabled={isLoadingBoards}
-          onClick={() => setIsBoardComposerOpen(true)}
-          type="button"
-        >
-          + Create a board...
-        </button>
-
-        <div
-          className={`overflow-hidden transition-all duration-250 ease-out ${
-            isBoardComposerOpen ? "mt-2 max-h-80 opacity-100" : "max-h-0 opacity-0"
-          }`}
-        >
+        {!isBoardComposerOpen ? (
+          <button
+            className="w-full rounded border border-slate-300 bg-white px-4 py-2.5 text-left text-sm text-slate-500 transition-colors duration-200 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-900 disabled:cursor-not-allowed disabled:opacity-60"
+            disabled={isLoadingBoards}
+            onClick={() => setIsBoardComposerOpen(true)}
+            type="button"
+          >
+            + Create a board...
+          </button>
+        ) : (
           <div className="space-y-1">
-            <BoardForm disabled={isLoadingBoards || !isBoardComposerOpen} isSubmitting={isCreatingBoard} onSubmit={onCreateBoard} />
+            <BoardForm
+              disabled={isLoadingBoards}
+              isSubmitting={isCreatingBoard}
+              onSubmit={onCreateBoard}
+            />
             <div className="flex justify-end">
               <button
                 className="rounded border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
@@ -128,7 +124,7 @@ export function Sidebar({
               </button>
             </div>
           </div>
-        </div>
+        )}
       </section>
     </aside>
   );

@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent } from "react";
+import { FormEvent, useEffect, useRef } from "react";
 
 type BoardFormProps = {
   onSubmit?: (payload: { name: string }) => Promise<void> | void;
@@ -9,6 +9,14 @@ type BoardFormProps = {
 };
 
 export function BoardForm({ onSubmit, isSubmitting = false, disabled = false }: BoardFormProps) {
+  const nameInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!disabled) {
+      nameInputRef.current?.focus();
+    }
+  }, [disabled]);
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
@@ -27,6 +35,7 @@ export function BoardForm({ onSubmit, isSubmitting = false, disabled = false }: 
           Board name
         </label>
         <input
+          ref={nameInputRef}
           className="w-full rounded border border-slate-300 px-3 py-2"
           disabled={disabled}
           id="board-name"
