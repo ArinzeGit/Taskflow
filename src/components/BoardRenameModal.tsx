@@ -1,7 +1,7 @@
 "use client";
 
 import { Board } from "@/types";
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 
 type BoardRenameModalProps = {
   board: Board | null;
@@ -12,12 +12,26 @@ type BoardRenameModalProps = {
 
 export function BoardRenameModal({ board, onClose, onSave, isSaving = false }: BoardRenameModalProps) {
   const [name, setName] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (board) {
       setName(board.name);
     }
   }, [board]);
+
+  useEffect(() => {
+    if (!board || isSaving) {
+      return;
+    }
+
+    const input = inputRef.current;
+    if (!input) {
+      return;
+    }
+
+    input.focus();
+  }, [board, isSaving]);
 
   if (!board) {
     return null;
@@ -50,6 +64,7 @@ export function BoardRenameModal({ board, onClose, onSave, isSaving = false }: B
               Board name
             </label>
             <input
+              ref={inputRef}
               className="w-full rounded border border-slate-300 px-3 py-2"
               disabled={isSaving}
               id="rename-board-name"
