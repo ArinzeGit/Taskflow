@@ -45,7 +45,14 @@ https://taskflow-rust-one.vercel.app/
 
 ## Screenshots
 
-<!-- Add images here -->
+### Boards View
+![Boards](./screenshots/boards.png)
+
+### Task Creation
+![Task Creation](./screenshots/task.png)
+
+### Authentication
+![Auth](./screenshots/auth.png)
 
 ---
 
