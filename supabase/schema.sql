@@ -115,3 +115,59 @@ using (
       and b.owner_id = auth.uid()
   )
 );
+
+-- Append-only activity log per board (created from the app after each action).
+
+create table if not exists public.board_activities (
+  id uuid primary key default gen_random_uuid(),
+  board_id uuid not null references public.boards(id) on delete cascade,
+  actor_id uuid not null references auth.users(id) on delete cascade,
+  type text not null check (
+    type in (
+      'board_created',
+      'board_renamed',
+      'task_created',
+      'task_title_updated',
+      'task_description_updated',
+      'task_status_changed',
+      'task_deleted'
+    )
+  ),
+  payload jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists board_activities_board_created_idx
+  on public.board_activities (board_id, created_at asc);
+
+alter table public.board_activities enable row level security;
+
+drop policy if exists "board_activities_select_by_board_owner" on public.board_activities;
+create policy "board_activities_select_by_board_owner"
+on public.board_activities
+for select
+using (
+  exists (
+    select 1
+    from public.boards b
+    where b.id = board_activities.board_id
+      and b.owner_id = auth.uid()
+  )
+);
+
+drop policy if exists "board_activities_insert_by_board_owner" on public.board_activities;
+create policy "board_activities_insert_by_board_owner"
+on public.board_activities
+for insert
+with check (
+  actor_id = auth.uid()
+  and exists (
+    select 1
+    from public.boards b
+    where b.id = board_activities.board_id
+      and b.owner_id = auth.uid()
+  )
+);
+
+-- Optional: enable Realtime for this table (Dashboard → Database → Replication,
+-- or): alter publication supabase_realtime add table public.board_activities;

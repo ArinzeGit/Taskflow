@@ -1,5 +1,6 @@
 "use client";
 
+import { BoardActivityLog } from "@/components/BoardActivityLog";
 import { BoardRenameModal } from "@/components/BoardRenameModal";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { EmptyState } from "@/components/EmptyState";
@@ -11,9 +12,10 @@ import { Spinner } from "@/components/Spinner";
 import { TaskForm } from "@/components/TaskForm";
 import { TaskListSkeleton } from "@/components/TaskListSkeleton";
 import { TasksMainSkeleton } from "@/components/TasksMainSkeleton";
+import { insertBoardActivities, insertBoardActivity } from "@/lib/board-activities";
 import { getActionErrorMessage, getErrorMessage } from "@/lib/errors";
 import { getSupabaseClient } from "@/lib/supabase";
-import { Board, Task } from "@/types";
+import { Board, BoardActivity, Task } from "@/types";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -37,6 +39,15 @@ type TaskRow = {
   updated_at: string;
 };
 
+type BoardActivityRow = {
+  id: string;
+  board_id: string;
+  actor_id: string;
+  type: BoardActivity["type"];
+  payload: Record<string, unknown> | null;
+  created_at: string;
+};
+
 function mapBoard(row: BoardRow): Board {
   return {
     id: row.id,
@@ -56,6 +67,20 @@ function mapTask(row: TaskRow): Task {
     assigneeId: row.assignee_id ?? undefined,
     createdAt: row.created_at,
     updatedAt: row.updated_at
+  };
+}
+
+function mapBoardActivity(row: BoardActivityRow): BoardActivity {
+  const payload =
+    typeof row.payload === "object" && row.payload !== null ? row.payload : {};
+
+  return {
+    id: row.id,
+    boardId: row.board_id,
+    actorId: row.actor_id,
+    type: row.type,
+    payload,
+    createdAt: row.created_at
   };
 }
 
@@ -83,6 +108,8 @@ export default function BoardsPage() {
   );
   const [isDeletingTask, setIsDeletingTask] = useState(false);
   const [isLoadingTasks, setIsLoadingTasks] = useState(false);
+  const [isLoadingActivities, setIsLoadingActivities] = useState(false);
+  const [activities, setActivities] = useState<BoardActivity[]>([]);
   const [isTaskComposerOpen, setIsTaskComposerOpen] = useState(false);
   const channelRef = useRef<RealtimeChannel | null>(null);
 
@@ -158,7 +185,9 @@ export default function BoardsPage() {
   useLayoutEffect(() => {
     if (!selectedBoardId) {
       setIsLoadingTasks(false);
+      setIsLoadingActivities(false);
       setTasks([]);
+      setActivities([]);
       setTasksLoadError(null);
       setIsTaskComposerOpen(false);
       return;
@@ -166,9 +195,33 @@ export default function BoardsPage() {
 
     setTasksLoadError(null);
     setIsLoadingTasks(true);
+    setIsLoadingActivities(true);
     setTasks([]);
+    setActivities([]);
     setIsTaskComposerOpen(false);
   }, [selectedBoardId]);
+
+  const reloadActivities = useCallback(async (boardId: string) => {
+    try {
+      const supabase = getSupabaseClient();
+      const { data, error } = await supabase
+        .from("board_activities")
+        .select("id,board_id,actor_id,type,payload,created_at")
+        .eq("board_id", boardId)
+        .order("created_at", { ascending: true });
+
+      if (error) {
+        console.warn("[board_activities] reload failed:", error.message);
+        setActivities([]);
+        return;
+      }
+
+      setActivities((data ?? []).map((row) => mapBoardActivity(row as BoardActivityRow)));
+    } catch (error) {
+      console.warn("[board_activities] reload failed:", error);
+      setActivities([]);
+    }
+  }, []);
 
   const retryLoadTasks = useCallback(async () => {
     if (!selectedBoardId) {
@@ -177,16 +230,26 @@ export default function BoardsPage() {
 
     setTasksLoadError(null);
     setIsLoadingTasks(true);
+    setIsLoadingActivities(true);
     setTasks([]);
+    setActivities([]);
 
     try {
       const supabase = getSupabaseClient();
-      const { data: tasksData, error: tasksError } = await supabase
-        .from("tasks")
-        .select("id,board_id,title,description,status,assignee_id,created_at,updated_at")
-        .eq("board_id", selectedBoardId)
-        .order("created_at", { ascending: true });
+      const [tasksResponse, activitiesResponse] = await Promise.all([
+        supabase
+          .from("tasks")
+          .select("id,board_id,title,description,status,assignee_id,created_at,updated_at")
+          .eq("board_id", selectedBoardId)
+          .order("created_at", { ascending: true }),
+        supabase
+          .from("board_activities")
+          .select("id,board_id,actor_id,type,payload,created_at")
+          .eq("board_id", selectedBoardId)
+          .order("created_at", { ascending: true })
+      ]);
 
+      const tasksError = tasksResponse.error;
       if (tasksError) {
         const msg = getActionErrorMessage(tasksError.message, tasksError.message);
         setTasksLoadError(msg);
@@ -194,10 +257,18 @@ export default function BoardsPage() {
           description: msg,
           action: { label: "Retry", onClick: () => void retryLoadTasks() }
         });
-        return;
+      } else {
+        setTasks((tasksResponse.data ?? []).map((task) => mapTask(task as TaskRow)));
       }
 
-      setTasks((tasksData ?? []).map((task) => mapTask(task as TaskRow)));
+      if (activitiesResponse.error) {
+        console.warn("[board_activities] load failed:", activitiesResponse.error.message);
+        setActivities([]);
+      } else {
+        setActivities(
+          (activitiesResponse.data ?? []).map((row) => mapBoardActivity(row as BoardActivityRow))
+        );
+      }
     } catch (error) {
       const msg = getErrorMessage(error, "Failed to load tasks.");
       setTasksLoadError(msg);
@@ -207,6 +278,7 @@ export default function BoardsPage() {
       });
     } finally {
       setIsLoadingTasks(false);
+      setIsLoadingActivities(false);
     }
   }, [selectedBoardId]);
 
@@ -220,16 +292,24 @@ export default function BoardsPage() {
     async function loadTasksForBoard(boardId: string) {
       try {
         const supabase = getSupabaseClient();
-        const { data: tasksData, error: tasksError } = await supabase
-          .from("tasks")
-          .select("id,board_id,title,description,status,assignee_id,created_at,updated_at")
-          .eq("board_id", boardId)
-          .order("created_at", { ascending: true });
+        const [tasksResponse, activitiesResponse] = await Promise.all([
+          supabase
+            .from("tasks")
+            .select("id,board_id,title,description,status,assignee_id,created_at,updated_at")
+            .eq("board_id", boardId)
+            .order("created_at", { ascending: true }),
+          supabase
+            .from("board_activities")
+            .select("id,board_id,actor_id,type,payload,created_at")
+            .eq("board_id", boardId)
+            .order("created_at", { ascending: true })
+        ]);
 
         if (cancelled) {
           return;
         }
 
+        const tasksError = tasksResponse.error;
         if (tasksError) {
           const msg = getActionErrorMessage(tasksError.message, tasksError.message);
           setTasksLoadError(msg);
@@ -237,10 +317,18 @@ export default function BoardsPage() {
             description: msg,
             action: { label: "Retry", onClick: () => void retryLoadTasks() }
           });
-          return;
+        } else {
+          setTasks((tasksResponse.data ?? []).map((task) => mapTask(task as TaskRow)));
         }
 
-        setTasks((tasksData ?? []).map((task) => mapTask(task as TaskRow)));
+        if (activitiesResponse.error) {
+          console.warn("[board_activities] load failed:", activitiesResponse.error.message);
+          setActivities([]);
+        } else {
+          setActivities(
+            (activitiesResponse.data ?? []).map((row) => mapBoardActivity(row as BoardActivityRow))
+          );
+        }
       } catch (error) {
         if (!cancelled) {
           const msg = getErrorMessage(error, "Failed to load tasks.");
@@ -253,6 +341,7 @@ export default function BoardsPage() {
       } finally {
         if (!cancelled) {
           setIsLoadingTasks(false);
+          setIsLoadingActivities(false);
         }
       }
     }
@@ -280,7 +369,7 @@ export default function BoardsPage() {
     }
 
     const newChannel = supabase
-      .channel(`tasks-${selectedBoardId}`)
+      .channel(`board-${selectedBoardId}`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "tasks", filter: `board_id=eq.${selectedBoardId}` },
@@ -303,6 +392,18 @@ export default function BoardsPage() {
           setTasks((data ?? []).map((task) => mapTask(task as TaskRow)));
         }
       )
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "board_activities",
+          filter: `board_id=eq.${selectedBoardId}`
+        },
+        async () => {
+          await reloadActivities(selectedBoardId);
+        }
+      )
       .subscribe();
 
     channelRef.current = newChannel;
@@ -313,7 +414,7 @@ export default function BoardsPage() {
         channelRef.current = null;
       }
     };
-  }, [selectedBoardId, retryLoadTasks]);
+  }, [selectedBoardId, retryLoadTasks, reloadActivities]);
 
   async function handleCreateBoard(payload: { name: string }) {
     setIsCreatingBoard(true);
@@ -342,6 +443,13 @@ export default function BoardsPage() {
       const newBoard = mapBoard(data as BoardRow);
       setBoards((prev) => [...prev, newBoard]);
       setSelectedBoardId(newBoard.id);
+      await insertBoardActivity(supabase, {
+        boardId: newBoard.id,
+        actorId: userId,
+        type: "board_created",
+        payload: { name: newBoard.name }
+      });
+      void reloadActivities(newBoard.id);
       toast.success("Board created");
     } catch (error) {
       toast.error(getActionErrorMessage(error, "Failed to create board."));
@@ -377,6 +485,19 @@ export default function BoardsPage() {
 
       setTasks((prev) => [...prev, mapTask(data as TaskRow)]);
       setIsTaskComposerOpen(false);
+
+      const { data: sessionForLog } = await supabase.auth.getSession();
+      const actorId = sessionForLog.session?.user.id;
+      if (actorId) {
+        await insertBoardActivity(supabase, {
+          boardId: selectedBoardId,
+          actorId,
+          type: "task_created",
+          payload: { taskId: data.id, title: payload.title }
+        });
+        void reloadActivities(selectedBoardId);
+      }
+
       toast.success("Task created");
     } catch (error) {
       toast.error(getActionErrorMessage(error, "Failed to create task."));
@@ -391,6 +512,12 @@ export default function BoardsPage() {
     description: string;
     status: Task["status"];
   }) {
+    const originalTask = tasks.find((taskItem) => taskItem.id === payload.id);
+    if (!originalTask) {
+      toast.error("Could not update task.");
+      return;
+    }
+
     setIsSavingTaskEdit(true);
     const previousTasks = tasks;
     const now = new Date().toISOString();
@@ -432,6 +559,51 @@ export default function BoardsPage() {
         prev.map((item) => (item.id === payload.id ? mapTask(data as TaskRow) : item))
       );
       setEditingTask(null);
+
+      const { data: sessionForLog } = await supabase.auth.getSession();
+      const actorId = sessionForLog.session?.user.id;
+      if (actorId) {
+        const prevTitle = originalTask.title.trim();
+        const nextTitle = payload.title.trim();
+        const prevDesc = (originalTask.description ?? "").trim();
+        const nextDesc = (payload.description ?? "").trim();
+        const entries: {
+          type: BoardActivity["type"];
+          payload: Record<string, unknown>;
+        }[] = [];
+
+        if (prevTitle !== nextTitle) {
+          entries.push({
+            type: "task_title_updated",
+            payload: {
+              taskId: payload.id,
+              previousTitle: prevTitle,
+              title: nextTitle
+            }
+          });
+        }
+        if (prevDesc !== nextDesc) {
+          entries.push({
+            type: "task_description_updated",
+            payload: { taskId: payload.id, taskTitle: nextTitle }
+          });
+        }
+        if (originalTask.status !== payload.status) {
+          entries.push({
+            type: "task_status_changed",
+            payload: {
+              taskId: payload.id,
+              taskTitle: nextTitle,
+              fromStatus: originalTask.status,
+              toStatus: payload.status
+            }
+          });
+        }
+
+        await insertBoardActivities(supabase, originalTask.boardId, actorId, entries);
+        void reloadActivities(originalTask.boardId);
+      }
+
       toast.success("Task updated");
     } catch (error) {
       setTasks(previousTasks);
@@ -479,6 +651,19 @@ export default function BoardsPage() {
         prev.map((b) => (b.id === renamingBoard.id ? mapBoard(data as BoardRow) : b))
       );
       setRenamingBoard(null);
+
+      const { data: sessionForLog } = await supabase.auth.getSession();
+      const actorId = sessionForLog.session?.user.id;
+      if (actorId) {
+        await insertBoardActivity(supabase, {
+          boardId: renamingBoard.id,
+          actorId,
+          type: "board_renamed",
+          payload: { previousName: renamingBoard.name, newName: name }
+        });
+        void reloadActivities(renamingBoard.id);
+      }
+
       toast.success("Board renamed");
     } catch (error) {
       setBoards(previousBoards);
@@ -602,12 +787,33 @@ export default function BoardsPage() {
       return;
     }
 
+    const boardId = selectedBoardId;
+    const deletedTitle = taskDeleteConfirm.title;
+    const deletedId = taskDeleteConfirm.id;
+
     setIsDeletingTask(true);
     try {
-      const ok = await handleDeleteTask(taskDeleteConfirm.id);
-      if (ok) {
-        setTaskDeleteConfirm(null);
-        toast.success("Task deleted");
+      const ok = await handleDeleteTask(deletedId);
+      if (!ok) {
+        return;
+      }
+
+      setTaskDeleteConfirm(null);
+      toast.success("Task deleted");
+
+      if (boardId) {
+        const supabase = getSupabaseClient();
+        const { data: sessionForLog } = await supabase.auth.getSession();
+        const actorId = sessionForLog.session?.user.id;
+        if (actorId) {
+          await insertBoardActivity(supabase, {
+            boardId,
+            actorId,
+            type: "task_deleted",
+            payload: { title: deletedTitle }
+          });
+          void reloadActivities(boardId);
+        }
       }
     } finally {
       setIsDeletingTask(false);
@@ -727,6 +933,7 @@ export default function BoardsPage() {
                   </div>
                 )}
 
+                <BoardActivityLog activities={activities} isLoading={isLoadingActivities} />
               </section>
             </>
           ) : null}
