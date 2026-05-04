@@ -44,17 +44,22 @@ export function BoardCard({
           ? "border-blue-300 bg-blue-100 ring-1 ring-blue-200"
           : "border-slate-200 bg-slate-50/80 hover:border-slate-400 hover:bg-slate-100"
       }`}
+      onClick={() => onSelect?.(board.id)}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          onSelect?.(board.id);
+        }
+      }}
     >
       <span className={`h-6 w-1 rounded-full ${isSelected ? "bg-blue-500" : "bg-transparent"}`} />
-      <button
-        className="min-w-0 flex-1 rounded px-2 py-1 text-left"
-        onClick={() => onSelect?.(board.id)}
-        type="button"
-      >
+      <div className="min-w-0 flex-1 rounded px-2 py-1 text-left">
         <p className={`truncate text-sm font-medium ${isSelected ? "text-blue-900" : "text-slate-800"}`}>
           {board.name}
         </p>
-      </button>
+      </div>
       <div className="relative" ref={menuRef}>
         <button
           aria-expanded={isMenuOpen}
