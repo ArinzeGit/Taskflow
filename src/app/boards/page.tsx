@@ -833,7 +833,14 @@ export default function BoardsPage() {
 
   return (
     <div className="flex min-h-screen flex-col bg-slate-100">
-      <Header subtitle="Collaborate on tasks with your team." title="Boards" />
+      <Header
+        // leading={<p className="text-sm font-medium text-slate-600">Welcome back, Alex 👋</p>}
+        leading={<span className="text-gray-600">
+          Welcome back, <span className="text-gray-800 font-medium">Alex 👋🏼</span>
+        </span>}
+        subtitle="Collaborate on tasks with your team."
+        title="Boards"
+      />
 
       <div className="flex min-h-0 flex-1 flex-col md:flex-row">
         <Sidebar
