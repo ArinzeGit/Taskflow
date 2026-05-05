@@ -1,5 +1,6 @@
-import Link from "next/link";
 import Image from "next/image";
+import Link from "next/link";
+import { getLoginPathWithDemo } from "@/lib/demo-account";
 
 export default function HomePage() {
   return (
@@ -34,6 +35,12 @@ export default function HomePage() {
               Login
             </Link>
           </div>
+          <p className="text-sm text-slate-600">
+            Want to explore quickly?{" "}
+            <Link className="font-medium text-blue-700 hover:text-blue-900" href={getLoginPathWithDemo()}>
+              Try the demo account -&gt;
+            </Link>
+          </p>
         </section>
 
         <section className="w-full max-w-4xl rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
