@@ -7,7 +7,8 @@ A real-time task management application with secure authentication, row-level se
 https://taskflow-rust-one.vercel.app/
 
 **Demo Account**
-demo@taskflow.com / demo123
+
+`demo@taskflow.com` / `demo123`
 
 ---
 
