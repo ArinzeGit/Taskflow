@@ -208,7 +208,7 @@ export default function BoardsPage() {
         .from("board_activities")
         .select("id,board_id,actor_id,type,payload,created_at")
         .eq("board_id", boardId)
-        .order("created_at", { ascending: true });
+        .order("created_at", { ascending: false });
 
       if (error) {
         console.warn("[board_activities] reload failed:", error.message);
@@ -246,7 +246,7 @@ export default function BoardsPage() {
           .from("board_activities")
           .select("id,board_id,actor_id,type,payload,created_at")
           .eq("board_id", selectedBoardId)
-          .order("created_at", { ascending: true })
+          .order("created_at", { ascending: false })
       ]);
 
       const tasksError = tasksResponse.error;
@@ -302,7 +302,7 @@ export default function BoardsPage() {
             .from("board_activities")
             .select("id,board_id,actor_id,type,payload,created_at")
             .eq("board_id", boardId)
-            .order("created_at", { ascending: true })
+            .order("created_at", { ascending: false })
         ]);
 
         if (cancelled) {

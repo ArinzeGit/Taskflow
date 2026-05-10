@@ -52,10 +52,10 @@ https://taskflow-rust-one.vercel.app/
 ![Login flow](./public/gifs/login.gif)
 
 ### Board Workflow
-![Task Creation](./public/gifs/boardWorkflow.gif)
+![Board workflow](./public/gifs/boards.gif)
 
 ### Task Workflow
-![Task Creation](./public/gifs/taskworkflow.gif)
+![Task workflow](./public/gifs/tasks.gif)
 
 ---
 
