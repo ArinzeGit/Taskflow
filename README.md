@@ -43,9 +43,6 @@ https://taskflow-rust-one.vercel.app/
 
 ## Preview
 
-### Boards Page
-![Boards](./public/screenshots/boards.png)
-
 ### Login Flow
 ![Login flow](./public/gifs/login.gif)
 
@@ -54,6 +51,9 @@ https://taskflow-rust-one.vercel.app/
 
 ### Task Workflow
 ![Task workflow](./public/gifs/tasks.gif)
+
+### Boards Page
+![Boards](./public/screenshots/boards.png)
 
 ---
 
