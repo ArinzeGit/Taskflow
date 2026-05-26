@@ -52,9 +52,6 @@ https://taskflow-rust-one.vercel.app/
 ### Task Workflow
 ![Task workflow](./public/gifs/tasks.gif)
 
-### Boards Page
-![Boards](./public/screenshots/boards.png)
-
 ---
 
 ## Getting Started
